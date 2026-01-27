@@ -2,7 +2,6 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <!-- Configurações para comportar-se como App Nativo -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,68 +9,66 @@
     <meta name="theme-color" content="#000000">
     <meta name="application-name" content="DEL 8">
     
-    <title>DEL 8 - Mobile AI</title>
+    <title>DEL 8 - Sistema Local</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Righteous & Montserrat -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #000000; color: #e5e7eb; overscroll-behavior-y: none; }
-        
-        h1, h2, h3, h4, .brand-font, .cat-btn, .price-tag { 
-            font-family: 'Righteous', cursive; 
-            letter-spacing: 0.05em;
-        }
-        
+        h1, h2, h3, h4, .brand-font, .cat-btn, .price-tag { font-family: 'Righteous', cursive; letter-spacing: 0.05em; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
         .card-gradient { background: linear-gradient(145deg, #111111, #0a0a0a); border: 1px solid #333; }
         .ai-gradient { background: linear-gradient(135deg, #f97316, #ef4444); }
         .active-tab { color: #f97316; border-bottom: 2px solid #f97316; }
         .safe-bottom { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-        
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
-        }
+        @keyframes pulse-ring { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); } }
         .ai-pulse { animation: pulse-ring 2s infinite; }
-
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #000000; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-
         input:focus, textarea:focus, select:focus { border-color: #f97316 !important; outline: none; ring-color: #f97316 !important; }
-        
-        /* Utility for SVG Icons */
         .icon { width: 1em; height: 1em; display: inline-block; fill: currentColor; }
+        
+        /* Drag & Drop Visuals */
+        .drag-over { background-color: rgba(249, 115, 22, 0.15); border: 2px dashed #f97316; transform: scale(1.01); transition: all 0.2s; }
+        .draggable { cursor: grab; }
+        .draggable:active { cursor: grabbing; }
+        .dragging { opacity: 0.4; transform: scale(0.95); }
+
+        #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; pointer-events: none; }
     </style>
 </head>
 <body class="safe-bottom">
 
-    <!-- Header Fixo -->
+    <!-- Loading Screen -->
+    <div id="loading-overlay">
+        <div class="text-center">
+            <svg class="icon text-orange-500 text-6xl ai-pulse mb-4" viewBox="0 0 24 24"><path d="M20 10C20 5 4 5 4 10H20ZM3 11H21V14H3V11ZM4 15H20V18C20 20 4 20 4 18V15Z"></path></svg>
+            <h2 class="text-white text-xl font-bold tracking-widest">CARREGANDO...</h2>
+        </div>
+    </div>
+
+    <!-- Header -->
     <header class="fixed top-0 w-full bg-black border-b border-gray-900 z-50 shadow-md shadow-orange-900/20">
         <div class="flex items-center justify-between px-4 py-3 max-w-4xl mx-auto">
             <div class="flex items-center space-x-2">
-                <!-- SVG Hamburger Icon -->
-                <svg class="icon text-orange-500 text-2xl" viewBox="0 0 24 24"><path d="M21 15.998c-.326 0-.645.078-.928.225l-.01.005-1.503.778c-1.37.675-2.775.675-4.145 0l-1.503-.778a2.052 2.052 0 0 0-1.856 0l-1.503.778c-1.37.675-2.775.675-4.145 0l-1.503-.778a2.053 2.053 0 0 0-.938-.23H2c-1.103 0-2 .897-2 2v2c0 1.103.897 2 2 2h19c1.103 0 2-.897 2-2v-2c0-1.103-.897-2-2-2h-1.002zM20 7.998c-.62-4.01-4.088-7-8.25-7s-7.63 2.99-8.25 7H2v2h19v-2h-1.5z"></path></svg>
-                <h1 class="text-2xl font-bold tracking-wider text-white">DEL <span class="text-orange-500">8</span></h1>
+                <svg class="icon text-orange-500 text-3xl" viewBox="0 0 24 24"><path d="M20 10C20 5 4 5 4 10H20ZM3 11H21V14H3V11ZM4 15H20V18C20 20 4 20 4 18V15Z"></path></svg>
+                <h1 class="text-2xl font-bold tracking-wider text-white">DEL<span class="text-orange-500">8</span></h1>
             </div>
-            
-            <div class="flex items-center space-x-5">
-                <!-- Botão Admin -->
+            <div class="flex items-center space-x-4">
+                <div id="connection-status" class="flex items-center gap-1 text-[10px] text-gray-500 font-mono">
+                    <span class="status-dot status-offline" id="status-dot"></span> <span id="status-text">LOCAL</span>
+                </div>
                 <button onclick="switchTab('admin')" class="text-gray-600 hover:text-orange-500 transition" title="Área Restrita">
                     <svg class="icon text-lg" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path></svg>
                 </button>
-
-                <!-- Botão Carrinho -->
                 <div class="relative cursor-pointer" onclick="switchTab('cart')">
                     <svg class="icon text-xl text-gray-300 hover:text-orange-500 transition" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path><circle cx="10.5" cy="19.5" r="1.5"></circle><circle cx="17.5" cy="19.5" r="1.5"></circle></svg>
                     <span id="header-cart-count" class="absolute -top-2 -right-2 bg-orange-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
@@ -80,102 +77,47 @@
         </div>
     </header>
 
-    <!-- Conteúdo Principal -->
+    <!-- Main -->
     <main class="mt-16 max-w-4xl mx-auto p-4 relative">
         
-        <!-- VIEW: MENU -->
+        <!-- MENU -->
         <div id="view-menu" class="animate-fade-in pb-16">
-            <!-- Categorias (Scroll Horizontal) -->
             <div class="flex space-x-4 overflow-x-auto hide-scroll pb-4 mb-2 sticky top-16 bg-black z-40 py-2 border-b border-gray-900/50">
                 <button onclick="filterCategory('all')" class="cat-btn bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap active-cat transition-all transform hover:scale-105 shadow-lg shadow-orange-900/40">Todos</button>
                 <button onclick="filterCategory('BURGER REGRETS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap hover:bg-gray-800 hover:text-orange-500 transition-all transform hover:scale-105">Burgers</button>
                 <button onclick="filterCategory('ACOMPANHAMENTOS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap hover:bg-gray-800 hover:text-orange-500 transition-all transform hover:scale-105">Acompanhamentos</button>
                 <button onclick="filterCategory('BEBIDAS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap hover:bg-gray-800 hover:text-orange-500 transition-all transform hover:scale-105">Bebidas</button>
             </div>
-
-            <!-- AI Chef Float Button -->
-            <div class="mb-6 bg-gray-900 rounded-xl p-4 border border-orange-500/30 shadow-lg relative overflow-hidden group hover:border-orange-500/60 transition-colors">
-                <div class="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-orange-600 blur-2xl opacity-10 rounded-full group-hover:opacity-30 transition-opacity"></div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-full ai-gradient flex items-center justify-center ai-pulse text-white shadow-[0_0_15px_rgba(249,115,22,0.4)]">
-                            <!-- SVG Fire -->
-                            <svg class="icon text-sm" viewBox="0 0 24 24"><path d="M12 22c4.97 0 9-4.03 9-9-4.5 0-9-2.5-9-9 0 4.5-4.5 9-9 9 0 4.97 4.03 9 9 9z"></path></svg>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-white text-base">Indeciso?</h3>
-                            <p class="text-xs text-orange-400 font-sans">Peça uma sugestão à Chef IA</p>
-                        </div>
-                    </div>
-                    <button onclick="openAiChefModal()" class="bg-transparent border border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white text-xs font-bold py-2 px-4 rounded-full transition shadow-lg">
-                        Consultar Chef
-                    </button>
-                </div>
-            </div>
-
-            <!-- Grid de Produtos -->
-            <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Items serão renderizados via JS -->
-            </div>
+            <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </div>
 
-        <!-- VIEW: CARRINHO -->
+        <!-- CARRINHO -->
         <div id="view-cart" class="hidden animate-fade-in h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar p-1">
             <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
                 <h2 class="text-2xl font-bold text-white">Seu Carrinho</h2>
-                <!-- AI Cart Analysis Button -->
-                <button id="btn-analyze-cart" onclick="analyzeCart()" class="hidden text-xs bg-gray-900 text-orange-400 border border-orange-500/50 px-3 py-1 rounded-full flex items-center gap-2 hover:bg-gray-800 transition font-bold">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-12h2v6h-2zm0 8h2v2h-2z"></path></svg>
-                    <span>Julgar Pedido</span>
-                </button>
+                <div class="flex gap-2">
+                    <button id="btn-analyze-cart" onclick="analyzeCart()" class="hidden text-xs bg-gray-900 text-orange-400 border border-orange-500/50 px-3 py-1 rounded-full flex items-center gap-2 hover:bg-gray-800 transition font-bold"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-12h2v6h-2zm0 8h2v2h-2z"></path></svg> <span>Julgar</span></button>
+                    <button id="btn-diet-excuse" onclick="generateDietExcuse()" class="hidden text-xs bg-gray-900 text-green-400 border border-green-500/50 px-3 py-1 rounded-full flex items-center gap-2 hover:bg-gray-800 transition font-bold"><svg class="icon" viewBox="0 0 24 24"><path d="M2 22a8 8 0 1 1 16 0h-2a6 6 0 1 0-12 0H2zm8-9c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-4c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg> <span>Desculpa p/ Nutri</span></button>
+                </div>
             </div>
-
-            <!-- AI Response Area -->
             <div id="cart-ai-response" class="hidden mb-4 bg-gray-900 border border-orange-500/30 p-3 rounded-lg text-sm text-gray-300 relative">
                 <svg class="icon absolute top-2 left-2 text-orange-500/20 text-2xl" viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"></path></svg>
                 <div id="cart-ai-text" class="pl-4 italic font-sans"></div>
                 <button onclick="closeCartAi()" class="absolute top-1 right-2 text-gray-500 hover:text-white">&times;</button>
             </div>
-            
-            <!-- LISTA DE ITENS -->
-            <div id="cart-items-container" class="space-y-4 mb-6">
-                <div class="text-center text-gray-500 py-10">
-                    <svg class="icon text-4xl mb-3 text-gray-800" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path></svg>
-                    <p class="font-sans text-gray-600">Seu carrinho está vazio.</p>
-                    <button onclick="switchTab('menu')" class="mt-4 text-orange-500 font-bold hover:text-orange-400 transition underline decoration-orange-500/30">Voltar ao Menu</button>
-                </div>
-            </div>
-
-            <!-- Resumo e Checkout -->
+            <div id="cart-items-container" class="space-y-4 mb-6"></div>
             <div id="cart-footer" class="hidden bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-800 mb-4">
-                <div class="flex justify-between items-center mb-2 text-gray-400 text-sm font-sans">
-                    <span>Subtotal</span>
-                    <span id="cart-subtotal" class="font-bold font-mono text-white">R$ 0,00</span>
-                </div>
-                <div class="flex justify-between items-center mb-4 text-white text-xl font-bold border-t border-gray-800 pt-2">
-                    <span>Total</span>
-                    <span id="cart-total" class="text-orange-500 text-2xl">R$ 0,00</span>
-                </div>
-                
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Nome do Cliente</label>
-                    <input type="text" id="customer-name" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-orange-500 font-sans transition-colors" placeholder="Digite seu nome...">
-                </div>
-
-                <button onclick="checkout()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-orange-900/20 transition transform active:scale-95 flex justify-center items-center gap-2">
-                    <span class="text-lg tracking-wide">FINALIZAR PEDIDO</span>
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"></path></svg>
-                </button>
+                <div class="flex justify-between items-center mb-2 text-gray-400 text-sm font-sans"><span>Subtotal</span><span id="cart-subtotal" class="font-bold font-mono text-white">R$ 0,00</span></div>
+                <div class="flex justify-between items-center mb-4 text-white text-xl font-bold border-t border-gray-800 pt-2"><span>Total</span><span id="cart-total" class="text-orange-500 text-2xl">R$ 0,00</span></div>
+                <input type="text" id="customer-name" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-orange-500 font-sans transition-colors" placeholder="Digite seu nome...">
+                <button onclick="checkout()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-orange-900/20 transition transform active:scale-95 flex justify-center items-center gap-2"><span class="text-lg tracking-wide">FINALIZAR PEDIDO</span><svg class="icon" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"></path></svg></button>
             </div>
         </div>
 
-        <!-- VIEW: ADMIN -->
+        <!-- ADMIN -->
         <div id="view-admin" class="hidden animate-fade-in flex flex-col h-[calc(100vh-6rem)]">
-            <!-- Login -->
             <div id="admin-login" class="max-w-xs mx-auto mt-10 p-6 bg-gray-900 rounded-xl text-center border border-gray-800 shadow-2xl">
-                <div class="text-orange-500 text-5xl mb-4">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z"></path></svg>
-                </div>
+                <div class="text-orange-500 text-5xl mb-4"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z"></path></svg></div>
                 <h3 class="text-xl font-bold mb-4 text-white">Área Restrita</h3>
                 <input type="password" id="admin-pass" class="w-full bg-black border border-gray-700 rounded p-3 mb-4 text-center text-white font-sans focus:border-orange-500 outline-none" placeholder="Digite a Senha">
                 <button onclick="checkAdmin()" class="w-full bg-orange-600 text-white font-bold py-3 rounded hover:bg-orange-500 transition">ENTRAR</button>
@@ -183,701 +125,384 @@
                 <button onclick="switchTab('menu')" class="mt-4 text-xs text-gray-500 hover:text-white underline">Voltar ao Menu</button>
             </div>
 
-            <!-- Header Interno do Admin -->
             <div id="admin-content-wrapper" class="hidden flex flex-col h-full">
-                <div class="flex flex-col gap-4 mb-4 pt-2">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-2xl font-bold text-white">Painel Admin</h2>
-                        <button onclick="logoutAdmin()" class="text-sm text-red-500 hover:text-red-400 font-sans border border-red-900/50 px-3 py-1 rounded bg-red-900/10 flex items-center gap-1">Sair <svg class="icon text-xs" viewBox="0 0 24 24"><path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3h-9c-1.103 0-2 .897-2 2v4h2V5h9v14h-9v-4H9v4c0 1.103.897 2 2 2h9c1.103 0 2-.897 2-2V5c0-1.103-.897-2-2-2z"></path></svg></button>
-                    </div>
-                    <!-- Abas de Navegação Admin -->
-                    <div class="flex gap-2 p-1 bg-gray-900 rounded-lg border border-gray-800">
-                        <button onclick="switchAdminView('orders')" id="btn-admin-orders" class="flex-1 py-2 text-sm font-bold rounded bg-orange-600 text-white transition">PEDIDOS</button>
-                        <button onclick="switchAdminView('menu')" id="btn-admin-menu" class="flex-1 py-2 text-sm font-bold rounded text-gray-400 hover:text-white transition">CARDÁPIO</button>
-                    </div>
+                <div class="bg-gray-800 p-2 mb-4 rounded border border-gray-700 flex flex-col gap-2">
+                    <label class="text-[10px] text-gray-400 uppercase font-bold">Endereço do Servidor</label>
+                    <div class="flex gap-2"><input type="text" id="server-url-input" class="flex-1 bg-black border border-gray-600 rounded p-1 text-xs text-white" placeholder="Deixe vazio para modo local"><button onclick="saveServerConfig()" class="bg-blue-600 text-white text-xs px-3 rounded font-bold">SALVAR</button></div>
+                    <p id="server-status-msg" class="text-[10px] text-gray-500">Atual: <span id="current-server-display">Local (Offline)</span></p>
                 </div>
+                <div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold text-white">Painel Admin</h2><button onclick="logoutAdmin()" class="text-xs text-red-500 border border-red-900 px-2 py-1 rounded">Sair</button></div>
+                <div class="flex gap-2 p-1 bg-gray-900 rounded-lg border border-gray-800 mb-4"><button onclick="switchAdminView('orders')" id="btn-admin-orders" class="flex-1 py-2 text-sm font-bold rounded bg-orange-600 text-white">PEDIDOS</button><button onclick="switchAdminView('menu')" id="btn-admin-menu" class="flex-1 py-2 text-sm font-bold rounded text-gray-400">CARDÁPIO</button></div>
 
-                <!-- Dashboard: Pedidos e Stats -->
                 <div id="admin-orders-view" class="flex-1 overflow-y-auto custom-scrollbar p-1">
-                    <!-- Cards Stats -->
                     <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="bg-gray-900 p-4 rounded-xl border-l-4 border-orange-500 shadow-lg">
-                            <p class="text-xs text-gray-400 uppercase font-sans tracking-widest">Receita</p>
-                            <p id="stat-revenue" class="text-2xl font-bold text-white mt-1">R$ 0,00</p>
-                        </div>
-                        <div class="bg-gray-900 p-4 rounded-xl border-l-4 border-gray-600 shadow-lg">
-                            <p class="text-xs text-gray-400 uppercase font-sans tracking-widest">Pedidos</p>
-                            <p id="stat-orders" class="text-2xl font-bold text-white mt-1">0</p>
-                        </div>
+                        <div class="bg-gray-900 p-4 rounded-xl border-l-4 border-orange-500 shadow-lg"><p class="text-xs text-gray-400 uppercase font-sans tracking-widest">Receita</p><p id="stat-revenue" class="text-2xl font-bold text-white mt-1">R$ 0,00</p></div>
+                        <div class="bg-gray-900 p-4 rounded-xl border-l-4 border-gray-600 shadow-lg"><p class="text-xs text-gray-400 uppercase font-sans tracking-widest">Pedidos</p><p id="stat-orders" class="text-2xl font-bold text-white mt-1">0</p></div>
                     </div>
-
-                    <!-- Ações -->
-                    <div class="mb-6">
-                        <button onclick="exportToCSV()" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-lg flex items-center justify-center space-x-2 transition border border-gray-700 hover:border-orange-500 group">
-                            <svg class="icon text-green-500" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"></path></svg>
-                            <span>Baixar Relatório (Excel/CSV)</span>
-                        </button>
-                        <p class="text-xs text-center text-gray-600 mt-2 font-sans">Os dados são salvos localmente.</p>
-                    </div>
-
-                    <!-- Toolbar de Histórico -->
                     <div class="flex justify-between items-end mb-3 border-b border-gray-800 pb-2">
-                        <h3 class="font-bold text-gray-500 text-sm uppercase tracking-wider">Histórico de Pedidos</h3>
+                        <h3 class="font-bold text-gray-500 text-sm uppercase">Histórico</h3>
                         <div class="flex gap-2">
-                            <button id="btn-delete-selected" onclick="deleteSelected()" class="hidden bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 py-1 rounded transition shadow-lg shadow-red-900/20 flex items-center gap-1">
-                                <svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg> Apagar (<span id="delete-count">0</span>)
-                            </button>
-                            <button onclick="clearAllHistory()" class="text-xs text-gray-500 hover:text-red-500 border border-gray-800 hover:border-red-500/50 px-3 py-1 rounded transition">
-                                Limpar Tudo
-                            </button>
+                            <button id="btn-delete-selected" onclick="deleteSelected()" class="hidden bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 py-1 rounded transition shadow-lg shadow-red-900/20 flex items-center gap-1"><svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg> Apagar (<span id="delete-count">0</span>)</button>
+                            <button onclick="clearAllHistory()" class="text-xs text-red-500 border border-red-900 px-2 py-1 rounded">Limpar</button>
                         </div>
                     </div>
-
-                    <!-- Lista Recente -->
-                    <div id="orders-list" class="space-y-3 pb-20 font-sans">
-                        <!-- Lista de pedidos via JS -->
+                    
+                    <!-- DRAG & DROP COLUMNS -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20 font-sans h-full">
+                        <!-- Pendentes -->
+                        <div class="flex flex-col">
+                            <h4 class="text-orange-500 font-bold text-xs uppercase mb-2 border-b border-orange-500/30 pb-1 flex items-center gap-2">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></path></svg> Pendentes
+                            </h4>
+                            <!-- Drop Zone: Pendente -->
+                            <div id="pending-orders-list" class="space-y-3 min-h-[150px] rounded-lg p-1 transition-colors" 
+                                 ondrop="drop(event, 'Pendente')" 
+                                 ondragover="allowDrop(event)" 
+                                 ondragleave="leaveDrop(event)">
+                            </div>
+                        </div>
+                        
+                        <!-- Prontos -->
+                        <div class="flex flex-col">
+                            <h4 class="text-green-500 font-bold text-xs uppercase mb-2 border-b border-green-500/30 pb-1 flex items-center gap-2">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></path></svg> Prontos / Entregues
+                            </h4>
+                            <!-- Drop Zone: Pronto -->
+                            <div id="completed-orders-list" class="space-y-3 min-h-[150px] rounded-lg p-1 transition-colors" 
+                                 ondrop="drop(event, 'Pronto')" 
+                                 ondragover="allowDrop(event)" 
+                                 ondragleave="leaveDrop(event)">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Editor de Menu (NOVO) -->
                 <div id="admin-menu-view" class="hidden flex-1 overflow-y-auto custom-scrollbar p-1 pb-20">
-                    <button onclick="openMenuEditModal()" class="w-full mb-4 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2 shadow-lg shadow-green-900/20 transition transform active:scale-95">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg> Adicionar Novo Item
-                    </button>
-                    
-                    <div id="admin-menu-list" class="space-y-3">
-                        <!-- Lista de itens editáveis via JS -->
-                    </div>
+                    <button onclick="generateSlogan()" class="w-full mb-3 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg flex justify-center items-center gap-2 shadow-lg transition transform active:scale-95 text-sm"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"></path></svg> Criar Slogan</button>
+                    <button onclick="openMenuEditModal()" class="w-full mb-4 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2 shadow-lg shadow-green-900/20 transition transform active:scale-95"><svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg> Novo Item</button>
+                    <div id="admin-menu-list" class="space-y-3"></div>
                 </div>
             </div>
         </div>
-
     </main>
 
     <!-- Bottom Navigation (Mobile) -->
     <nav class="fixed bottom-0 w-full bg-black border-t border-gray-900 safe-bottom z-50">
         <div class="flex justify-around items-center h-16 max-w-4xl mx-auto">
-            <button onclick="switchTab('menu')" class="nav-btn w-full h-full flex flex-col items-center justify-center text-orange-500 hover:bg-gray-900/50 transition" id="nav-menu">
-                <svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"></path></svg>
-                <span class="text-xs font-bold">Menu</span>
-            </button>
-            <button onclick="switchTab('cart')" class="nav-btn w-full h-full flex flex-col items-center justify-center text-gray-500 hover:bg-gray-900/50 transition relative" id="nav-cart">
-                <div class="relative">
-                    <svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path><circle cx="10.5" cy="19.5" r="1.5"></circle><circle cx="17.5" cy="19.5" r="1.5"></circle></svg>
-                    <span id="nav-cart-badge" class="absolute -top-1 -right-2 bg-orange-600 text-white text-[10px] font-bold px-1 rounded-full hidden font-sans">0</span>
-                </div>
-                <span class="text-xs font-bold">Carrinho</span>
-            </button>
+            <button onclick="switchTab('menu')" id="nav-menu" class="nav-btn flex flex-col items-center text-orange-500"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"></path></svg><span class="text-xs font-bold">Menu</span></button>
+            <button onclick="switchTab('cart')" id="nav-cart" class="nav-btn flex flex-col items-center text-gray-500 relative"><div class="relative"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path><circle cx="10.5" cy="19.5" r="1.5"></circle><circle cx="17.5" cy="19.5" r="1.5"></circle></svg><span id="nav-cart-badge" class="absolute -top-1 -right-2 bg-orange-600 text-white text-[10px] font-bold px-1 rounded-full hidden font-sans">0</span></div><span class="text-xs font-bold">Carrinho</span></button>
         </div>
     </nav>
 
-    <!-- Modal de Adição/Opções (Cliente) -->
+    <!-- Modals -->
     <div id="modal-item" class="fixed inset-0 bg-black/90 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-gray-900 rounded-xl max-w-md w-full p-5 relative border border-gray-800 shadow-2xl">
             <button onclick="closeModal()" class="absolute top-3 right-3 text-gray-500 text-xl hover:text-white transition">&times;</button>
-            
-            <h3 id="modal-title" class="text-2xl font-bold text-white mb-1 leading-tight">Nome do Item</h3>
-            <p id="modal-desc" class="text-gray-400 text-sm mb-4 font-sans">Descrição do item...</p>
+            <h3 id="modal-title" class="text-2xl font-bold text-white mb-1">Nome</h3>
+            <p id="modal-desc" class="text-gray-400 text-sm mb-4 font-sans">Desc</p>
             <p id="modal-price" class="text-orange-500 font-bold text-2xl mb-4">R$ 0,00</p>
-
-            <!-- Sugestão IA -->
-            <button id="btn-ai-suggest" onclick="askPairingSuggestion()" class="w-full bg-gray-800 hover:bg-gray-700 text-orange-400 border border-orange-500/30 font-bold py-2 rounded-lg mb-4 flex justify-center items-center gap-2 transition text-xs">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M21 5V3H3v2l8 9v5H6v2h12v-2h-5v-5l8-9zM7.43 7L5.66 5h12.69l-1.78 2H7.43z"></path></svg> ✨ O que combina com isso?
-            </button>
-            <div id="ai-pairing-result" class="hidden mb-4 p-3 bg-black/50 rounded-lg border-l-2 border-orange-500 text-xs text-gray-300 font-sans italic"></div>
-
-            <div class="mb-4">
-                <label class="block text-xs text-gray-500 mb-1 uppercase font-bold">Observações</label>
-                <textarea id="modal-obs" class="w-full bg-black border border-gray-700 rounded p-2 text-white text-sm focus:border-orange-500 focus:outline-none font-sans" rows="2" placeholder="Ex: Sem cebola, ponto bem passado..."></textarea>
-            </div>
-
+            <textarea id="modal-obs" class="w-full bg-black border border-gray-700 rounded p-2 text-white text-sm mb-4" rows="2" placeholder="Observações..."></textarea>
             <div class="flex items-center justify-between mt-6">
-                <div class="flex items-center bg-black rounded-lg p-1 border border-gray-800">
-                    <button onclick="changeModalQty(-1)" class="w-10 h-10 rounded-lg bg-gray-900 text-white flex items-center justify-center font-bold hover:bg-gray-800 transition border border-gray-800 hover:border-orange-500/50">-</button>
-                    <span id="modal-qty" class="w-12 text-center font-bold text-white text-lg">1</span>
-                    <button onclick="changeModalQty(1)" class="w-10 h-10 rounded-lg bg-gray-900 text-white flex items-center justify-center font-bold hover:bg-gray-800 transition border border-gray-800 hover:border-orange-500/50">+</button>
-                </div>
-                <button onclick="confirmAddToCart()" class="bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 px-6 rounded-lg ml-4 flex-1 shadow-lg transform active:scale-95 transition">
-                    ADICIONAR
-                </button>
+                <div class="flex items-center bg-black rounded-lg p-1 border border-gray-800"><button onclick="changeModalQty(-1)" class="w-10 h-10 text-white font-bold">-</button><span id="modal-qty" class="w-12 text-center text-white text-lg">1</span><button onclick="changeModalQty(1)" class="w-10 h-10 text-white font-bold">+</button></div>
+                <button id="btn-add-to-cart" onclick="confirmAddToCart()" class="bg-orange-600 text-white font-bold py-3 px-6 rounded-lg ml-4 flex-1">ADICIONAR</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal Editar Menu (ADMIN) -->
     <div id="modal-menu-edit" class="fixed inset-0 bg-black/95 z-[80] hidden flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-gray-900 rounded-xl max-w-md w-full p-6 relative border border-gray-700 shadow-2xl">
-            <button onclick="closeMenuEditModal()" class="absolute top-3 right-3 text-gray-500 text-xl hover:text-white transition">&times;</button>
-            
-            <h3 id="menu-edit-title" class="text-xl font-bold text-white mb-4">Editar Item</h3>
-            
-            <div class="mb-3">
-                <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Categoria</label>
-                <select id="edit-cat" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm focus:border-orange-500">
-                    <option value="BURGER REGRETS">Burgers</option>
-                    <option value="ACOMPANHAMENTOS">Acompanhamentos</option>
-                    <option value="BEBIDAS">Bebidas</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Nome (Use HTML para Neon se quiser)</label>
-                <input type="text" id="edit-name" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm focus:border-orange-500" placeholder="Nome do item">
-            </div>
-
-            <div class="mb-3">
-                <div class="flex justify-between items-center mb-1">
-                    <label class="block text-xs font-bold text-gray-500 uppercase">Ingredientes / Descrição</label>
-                    <button onclick="generateAIDescription()" class="text-xs bg-orange-600 text-white px-2 py-0.5 rounded hover:bg-orange-500 transition">
-                        ✨ Gerar Descrição
-                    </button>
-                </div>
-                <textarea id="edit-desc" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm focus:border-orange-500" rows="3" placeholder="Ingredientes..."></textarea>
-            </div>
-
-            <div class="mb-6">
-                <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Preço (R$)</label>
-                <input type="number" id="edit-price" step="0.01" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm focus:border-orange-500" placeholder="0.00">
-            </div>
-
-            <div class="flex gap-3">
-                <button onclick="saveMenuItem()" class="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg shadow-lg">Salvar</button>
-                <button onclick="closeMenuEditModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-lg">Cancelar</button>
-            </div>
-            
-            <input type="hidden" id="edit-original-cat">
-            <input type="hidden" id="edit-index">
+            <button onclick="closeMenuEditModal()" class="absolute top-3 right-3 text-gray-500 text-xl">&times;</button>
+            <h3 id="menu-edit-title" class="text-xl font-bold text-white mb-4">Editar</h3>
+            <select id="edit-cat" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-3"><option value="BURGER REGRETS">Burgers</option><option value="ACOMPANHAMENTOS">Acompanhamentos</option><option value="BEBIDAS">Bebidas</option></select>
+            <input type="text" id="edit-name" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-3" placeholder="Nome">
+            <button onclick="generateAIDescription()" class="text-xs bg-orange-600 text-white px-2 py-0.5 rounded mb-1">✨ Gerar Descrição</button>
+            <textarea id="edit-desc" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-3" rows="3"></textarea>
+            <input type="number" id="edit-price" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-6" placeholder="Preço">
+            <div class="flex gap-3"><button onclick="saveMenuItem()" class="flex-1 bg-orange-600 text-white font-bold py-3 rounded-lg">Salvar</button></div>
+            <input type="hidden" id="edit-original-cat"><input type="hidden" id="edit-index">
         </div>
     </div>
 
-    <!-- Modal Chef IA -->
-    <div id="modal-ai-chef" class="fixed inset-0 bg-black/95 z-[65] hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-gray-900 rounded-xl max-w-md w-full p-5 relative border border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.15)]">
-            <button onclick="closeAiChefModal()" class="absolute top-3 right-3 text-gray-500 text-xl hover:text-white transition">&times;</button>
-            
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-8 h-8 rounded-full ai-gradient flex items-center justify-center text-white shadow-lg">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7V5.73C9.4 5.39 9 4.74 9 4a2 2 0 0 1 2-2M4.5 11a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1H5v-6zM19 17h.5a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1H19zM12 9a5 5 0 0 0-5 5v6h10v-6a5 5 0 0 0-5-5m-2.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3m5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3"></path></svg>
-                </div>
-                <h3 class="text-xl font-bold text-white">Chef IA Sugere ✨</h3>
-            </div>
-
-            <p class="text-gray-400 text-sm mb-4 font-sans">Me conte sua fome ou vibe de hoje, que eu escolho o "Burger Regrets" perfeito para você.</p>
-            
-            <textarea id="ai-chef-input" class="w-full bg-black border border-orange-500/30 rounded p-3 text-white text-sm mb-4 focus:border-orange-500 focus:outline-none font-sans" rows="2" placeholder="Ex: Tô com muita fome e amo bacon..."></textarea>
-
-            <div id="ai-chef-result" class="hidden mb-4 p-3 bg-black/50 rounded-lg border-l-2 border-orange-500 text-sm text-gray-300 font-sans"></div>
-
-            <button id="btn-ask-chef" onclick="askChefAI()" class="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2 transition shadow-lg">
-                <span>PEDIR SUGESTÃO</span>
-                <svg class="icon" viewBox="0 0 24 24"><path d="M12 22c4.97 0 9-4.03 9-9-4.5 0-9-2.5-9-9 0 4.5-4.5 9-9 9 0 4.97 4.03 9 9 9z"></path></svg>
-            </button>
-        </div>
-    </div>
-
-    <!-- Notification Toast -->
     <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl z-[70] hidden flex items-center transition-all duration-300 opacity-0 translate-y-[-20px] font-sans font-bold border border-orange-500">
-        <svg class="icon mr-2 text-orange-500" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path></svg>
         <span id="toast-msg">Item adicionado!</span>
     </div>
 
-    <script>
-        const apiKey = ""; 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- GEMINI API HELPER ---
-        async function callGemini(prompt, systemInstruction = "") {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                systemInstruction: { parts: [{ text: systemInstruction }] }
-            };
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) throw new Error('Falha na API Gemini');
-                const data = await response.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "A IA ficou sem palavras...";
-            } catch (error) {
-                console.error("Gemini Error:", error);
-                return "Ops! A Chef IA está fazendo um lanche. Tente novamente.";
-            }
-        }
-
-        // --- DADOS (MENU) ---
+        let db, auth, appId, userId;
+        // Default data...
         const DEFAULT_MENU = {
             "BURGER REGRETS": [
-                { id: "BR1", nome: `Simple <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`,     desc: "O clássico infalível: Pão, carne e queijo", preco: 18.00 },
-                { id: "BR2", nome: `Pikle <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`,      desc: "Com picles artesanais e molho da casa", preco: 22.00 },
-                { id: "BR3", nome: `Onion <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`,      desc: "Cebola caramelizada e cebola crispy", preco: 25.00 },
-                { id: "BR4", nome: `Bacon <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`,      desc: "Bacon crocante e molho de bacon", preco: 28.00 },
-                { id: "BR5", nome: `Melt <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`,       desc: "Muito queijo cheddar derretido", preco: 30.00 },
-                { id: "BR6", nome: `Rings <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`,      desc: "Com anéis de cebola (Onion Rings) dentro", preco: 27.00 },
-                { id: "BR7", nome: `Solemar <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`,    desc: "Carne de sol, queijo coalho e manteiga", preco: 33.00 },
-                { id: "BR8", nome: `Monster <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`,    desc: "Monstruoso: Carne dupla, bacon e cheddar", preco: 38.00 },
+                { id: "BR1", nome: `Simple <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "O clássico infalível: Pão, carne e queijo", preco: 18.00 },
+                { id: "BR2", nome: `Pikle <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Com picles artesanais e molho da casa", preco: 22.00 },
+                { id: "BR3", nome: `Onion <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Cebola caramelizada e cebola crispy", preco: 25.00 },
+                { id: "BR4", nome: `Bacon <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Bacon crocante e molho de bacon", preco: 28.00 },
+                { id: "BR5", nome: `Melt <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Muito queijo cheddar derretido", preco: 30.00 },
+                { id: "BR6", nome: `Rings <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Com anéis de cebola (Onion Rings) dentro", preco: 27.00 },
+                { id: "BR7", nome: `Solemar <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Carne de sol, queijo coalho e manteiga", preco: 33.00 },
+                { id: "BR8", nome: `Monster <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Monstruoso: Carne dupla, bacon e cheddar", preco: 38.00 },
             ],
-            "ACOMPANHAMENTOS": [
-                { id: "AC1", nome: "Fries Clássica",     desc: "Porção de batata frita clássica", preco: 10.00 },
-                { id: "AC2", nome: "Fries Turbinada",    desc: "Porção de batata frita coberta de bacon", preco: 15.00 },
-                { id: "AC3", nome: "Onion Rings",        desc: "Porção de anéis de cebola empanados", preco: 20.00 },
-                { id: "AC4", nome: "Onion Rings 2.0",    desc: "Anéis de cebola cobertos com coração de carne de sol", preco: 28.00 },
-            ],
-            "BEBIDAS": [
-                { id: "BB1", nome: "Refrigerante Lata",  desc: "350ml - Consultar sabores", preco: 6.00 },
-                { id: "BB2", nome: "Refrigerante 1L",    desc: "1 Litro - Consultar sabores", preco: 10.00 },
-            ]
+            "ACOMPANHAMENTOS": [{ id: "AC1", nome: "Fries Clássica", desc: "Porção de batata frita clássica", preco: 10.00 },{ id: "AC2", nome: "Fries Turbinada", desc: "Porção de batata frita coberta de bacon", preco: 15.00 },{ id: "AC3", nome: "Onion Rings", desc: "Porção de anéis de cebola empanados", preco: 20.00 },{ id: "AC4", nome: "Onion Rings 2.0", desc: "Anéis de cebola cobertos com coração de carne de sol", preco: 28.00 },],
+            "BEBIDAS": [{ id: "BB1", nome: "Refrigerante Lata", desc: "350ml - Consultar sabores", preco: 6.00 },{ id: "BB2", nome: "Refrigerante 1L", desc: "1 Litro - Consultar sabores", preco: 10.00 },]
         };
 
-        // --- ESTADO ---
+        let serverUrl = localStorage.getItem('del8ServerUrl') || "";
         let menuData = JSON.parse(localStorage.getItem('del8MenuData')) || DEFAULT_MENU;
         let cart = [];
-        let orders = JSON.parse(localStorage.getItem('burgerRegretsOrders')) || [];
+        let localOrders = JSON.parse(localStorage.getItem('del8LocalOrders')) || [];
         let currentModalItem = null;
         let modalQtyVal = 1;
+        let pollingInterval = null;
 
         document.addEventListener('DOMContentLoaded', () => {
+            const serverInput = document.getElementById('server-url-input');
+            if(serverInput) serverInput.value = serverUrl;
+            updateConnectionStatus();
+            initData();
             renderMenu('all');
-            updateCartUI();
+            updateCartUI(); 
+            if(serverUrl) startPolling();
+            // Touch Polyfill Init if needed or just rely on native for modern devices? 
+            // We'll rely on the global exposure of drag/drop handlers.
         });
 
-        // --- RENDERIZAR MENU ---
-        function renderMenu(filter) {
-            const grid = document.getElementById('menu-grid');
-            grid.innerHTML = '';
+        // ... (saveServerConfig, updateConnectionStatus, initData, sendOrder, fetchOrders, syncMenu, clearRemoteOrders, startPolling, stopPolling) ...
+        // Re-implementing simplified for context length, same as before:
+        function saveServerConfig() {
+            const input = document.getElementById('server-url-input');
+            serverUrl = input.value.trim();
+            if(serverUrl.endsWith('/')) serverUrl = serverUrl.slice(0, -1);
+            localStorage.setItem('del8ServerUrl', serverUrl);
+            updateConnectionStatus();
+            initData();
+            if(serverUrl) startPolling(); else stopPolling();
+            alert("Configuração salva!");
+        }
+        function updateConnectionStatus() {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            const display = document.getElementById('current-server-display');
+            if(serverUrl) { dot.classList.replace('status-offline','status-online'); text.innerText = "SERVER"; display.innerText = serverUrl; } 
+            else { dot.classList.replace('status-online','status-offline'); text.innerText = "LOCAL"; display.innerText = "Local (Offline)"; }
+        }
+        async function initData() {
+            if(serverUrl) { try { const res = await fetch(`${serverUrl}/api/menu`); if(res.ok) { const data = await res.json(); if(Object.keys(data).length > 0) { menuData = data; renderMenu('all'); } } } catch(e) {} }
+            const loader = document.getElementById('loading-overlay');
+            if(loader) { loader.classList.add('opacity-0'); setTimeout(() => loader.classList.add('hidden'), 500); }
+        }
+        async function sendOrder(order) {
+            if(serverUrl) { try { const res = await fetch(`${serverUrl}/api/orders`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(order) }); if(!res.ok) throw new Error("Falha"); return true; } catch(e) { alert("Erro online. Salvo localmente."); localOrders.push(order); localStorage.setItem('del8LocalOrders', JSON.stringify(localOrders)); return false; } } 
+            else { localOrders.push(order); localStorage.setItem('del8LocalOrders', JSON.stringify(localOrders)); return true; }
+        }
+        async function fetchOrders() {
+            if(serverUrl) { try { const res = await fetch(`${serverUrl}/api/orders`); if(res.ok) return await res.json(); } catch(e) {} }
+            return localOrders;
+        }
+        async function syncMenu(newMenu) {
+            if(serverUrl) { try { await fetch(`${serverUrl}/api/menu`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(newMenu) }); } catch(e){} }
+            localStorage.setItem('del8MenuData', JSON.stringify(newMenu));
+        }
+        async function clearRemoteOrders() {
+            if(serverUrl) { try { await fetch(`${serverUrl}/api/orders/clear`, { method: 'POST' }); } catch(e){} }
+            localOrders = []; localStorage.setItem('del8LocalOrders', JSON.stringify(localOrders));
+        }
+        function startPolling() {
+            if(pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(() => {
+                const adminView = document.getElementById('admin-content-wrapper');
+                const ordersView = document.getElementById('admin-orders-view');
+                if(adminView && !adminView.classList.contains('hidden') && ordersView && !ordersView.classList.contains('hidden')) updateAdminStats();
+            }, 5000);
+        }
+        function stopPolling() { if(pollingInterval) clearInterval(pollingInterval); }
 
-            let itemsToShow = [];
-            if(filter === 'all') {
-                Object.values(menuData).forEach(catItems => itemsToShow.push(...catItems));
-            } else {
-                itemsToShow = menuData[filter] || [];
-            }
-
-            itemsToShow.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'card-gradient rounded-xl p-4 shadow-lg hover:shadow-orange-900/20 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between';
-                card.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start">
-                            <h3 class="font-bold text-lg text-white leading-tight">${item.nome}</h3>
-                            <span class="text-xs font-mono text-gray-500 bg-black px-1 rounded border border-gray-800 font-bold">${item.id}</span>
-                        </div>
-                        <p class="text-gray-400 text-sm mt-2 line-clamp-2 font-sans">${item.desc}</p>
-                    </div>
-                    <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-800">
-                        <button onclick="openItemModal('${item.id}')" class="bg-orange-600 hover:bg-orange-500 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg active:scale-95 transition-all">
-                            <svg class="icon text-xs" viewBox="0 0 24 24"><path d="M11 9h2V6h3V4h-3V1h-2v3H8v2h3v3zm-4 9c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2zm-9.83-3.25.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.86-7.01L19.42 4h-.01l-1.1 2-2.76 5H8.53l-.13-.27L6.16 6l-.95-2-.94-2H1v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.13 0-.25-.11-.25-.25z"></path></svg>
-                        </button>
-                        <span class="text-orange-500 font-bold text-xl price-tag">R$ ${parseFloat(item.preco).toFixed(2)}</span>
-                    </div>
-                `;
-                grid.appendChild(card);
+        function renderMenu(f) {
+            const g = document.getElementById('menu-grid'); if(!g)return; g.innerHTML='';
+            let items = [];
+            if(f==='all') Object.values(menuData).forEach(x => items.push(...x)); else items = menuData[f]||[];
+            items.forEach(i => {
+                g.innerHTML += `<div class="card-gradient rounded-xl p-4 shadow-lg flex flex-col justify-between"><div><div class="flex justify-between items-start"><h3 class="font-bold text-lg text-white leading-tight">${i.nome}</h3><span class="text-xs font-mono text-gray-500 bg-black px-1 rounded border border-gray-800 font-bold">${i.id}</span></div><p class="text-gray-400 text-sm mt-2 line-clamp-2 font-sans">${i.desc}</p></div><div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-800"><button onclick="openItemModal('${i.id}')" class="bg-orange-600 hover:bg-orange-500 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg active:scale-95 transition-all"><svg class="icon text-xs" viewBox="0 0 24 24"><path d="M11 9h2V6h3V4h-3V1h-2v3H8v2h3v3zm-4 9c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2zm-9.83-3.25.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.86-7.01L19.42 4h-.01l-1.1 2-2.76 5H8.53l-.13-.27L6.16 6l-.95-2-.94-2H1v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.13 0-.25-.11-.25-.25z"></path></svg></button><span class="text-orange-500 font-bold text-xl price-tag">R$ ${parseFloat(i.preco).toFixed(2)}</span></div></div>`;
             });
         }
-
-        // --- ADMIN MENU EDITOR LIST ---
-        function renderAdminMenu() {
-            const list = document.getElementById('admin-menu-list');
-            list.innerHTML = '';
-
-            Object.entries(menuData).forEach(([category, items]) => {
-                const catHeader = document.createElement('div');
-                catHeader.className = "text-orange-500 font-bold text-xs uppercase tracking-wider mt-4 mb-2 border-b border-gray-800 pb-1";
-                catHeader.innerText = category;
-                list.appendChild(catHeader);
-
-                items.forEach((item, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'bg-gray-900 p-3 rounded border border-gray-800 flex justify-between items-center group hover:border-gray-700 transition';
-                    const tempDiv = document.createElement("div");
-                    tempDiv.innerHTML = item.nome;
-                    const cleanName = tempDiv.innerText || tempDiv.textContent;
-
-                    div.innerHTML = `
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs bg-black text-gray-500 px-1 rounded border border-gray-800 font-mono">${item.id}</span>
-                                <span class="font-bold text-white text-sm">${cleanName}</span>
-                            </div>
-                            <p class="text-xs text-gray-500 truncate w-48">${item.desc}</p>
-                            <p class="text-orange-500 font-bold text-xs mt-1">R$ ${parseFloat(item.preco).toFixed(2)}</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="openMenuEditModal('${category}', ${index})" class="text-blue-400 hover:text-white p-2 rounded bg-blue-900/20 hover:bg-blue-600 transition">
-                                <svg class="icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg>
-                            </button>
-                            <button onclick="deleteMenuItem('${category}', ${index})" class="text-red-400 hover:text-white p-2 rounded bg-red-900/20 hover:bg-red-600 transition">
-                                <svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg>
-                            </button>
-                        </div>
-                    `;
-                    list.appendChild(div);
-                });
-            });
-        }
-
-        // --- UTILS & NAVEGAÇÃO ---
-        function filterCategory(category) {
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                const btnText = btn.innerText.toUpperCase();
-                // Check if button text matches category roughly (e.g. BURGER matches BURGER REGRETS)
-                const match = (category === 'all' && btnText === 'TODOS') || 
-                              (category !== 'all' && btnText.includes(category.split(' ')[0]));
-                              
-                if(match) {
-                    btn.classList.remove('bg-gray-900', 'text-gray-400', 'border-gray-800');
-                    btn.classList.add('bg-orange-600', 'text-white', 'shadow-lg');
-                } else {
-                    btn.classList.add('bg-gray-900', 'text-gray-400', 'border-gray-800');
-                    btn.classList.remove('bg-orange-600', 'text-white', 'shadow-lg');
-                }
-            });
-            renderMenu(category);
-        }
-
-        function switchTab(tabName) {
-            ['menu', 'cart', 'admin'].forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
-            
-            const navMenu = document.getElementById('nav-menu');
-            const navCart = document.getElementById('nav-cart');
-            
-            // Reset colors
-            if(navMenu) { navMenu.classList.remove('text-orange-500'); navMenu.classList.add('text-gray-500'); }
-            if(navCart) { navCart.classList.remove('text-orange-500'); navCart.classList.add('text-gray-500'); }
-
-            document.getElementById(`view-${tabName}`).classList.remove('hidden');
-            
-            if(tabName === 'menu' && navMenu) {
-                navMenu.classList.remove('text-gray-500');
-                navMenu.classList.add('text-orange-500');
-            } else if (tabName === 'cart' && navCart) {
-                navCart.classList.remove('text-gray-500');
-                navCart.classList.add('text-orange-500');
-            }
-            
-            window.scrollTo(0,0);
-
-            if(tabName === 'admin' && localStorage.getItem('isAdminLoggedIn') === 'true') {
-                document.getElementById('admin-login').classList.add('hidden');
-                document.getElementById('admin-content-wrapper').classList.remove('hidden');
-                switchAdminView('orders');
-            }
-        }
-
-        // --- CART UI ---
-        function updateCartUI() {
-            const count = cart.reduce((acc, item) => acc + item.qty, 0);
-            const badges = [document.getElementById('header-cart-count'), document.getElementById('nav-cart-badge')];
-            badges.forEach(b => {
-                if (b) {
-                    b.innerText = count;
-                    if(count > 0) b.classList.remove('hidden');
-                    else b.classList.add('hidden');
-                }
-            });
-
-            const container = document.getElementById('cart-items-container');
-            const footer = document.getElementById('cart-footer');
-            const aiBtn = document.getElementById('btn-analyze-cart');
-            
-            if(cart.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center text-gray-500 py-10 flex flex-col items-center">
-                        <svg class="icon text-4xl mb-3 text-gray-800" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path></svg>
-                        <p class="font-sans text-gray-600">Seu carrinho está vazio.</p>
-                        <button onclick="switchTab('menu')" class="mt-4 text-orange-500 font-bold hover:text-orange-400 transition underline decoration-orange-500/30">Voltar ao Menu</button>
-                    </div>
-                `;
-                footer.classList.add('hidden');
-                aiBtn.classList.add('hidden');
-                document.getElementById('cart-ai-response').classList.add('hidden');
-                return;
-            }
-
-            aiBtn.classList.remove('hidden');
-            container.innerHTML = '';
-            let total = 0;
-
-            cart.forEach((item, index) => {
-                const subtotal = item.preco * item.qty;
-                total += subtotal;
-                
-                const div = document.createElement('div');
-                div.className = 'bg-gray-900 rounded-lg p-3 flex justify-between items-start border border-gray-800 shadow-md';
-                div.innerHTML = `
-                    <div class="flex-1">
-                        <div class="flex items-center">
-                            <span class="bg-orange-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded mr-2 font-sans">${item.qty}</span>
-                            <h4 class="font-bold text-white text-sm">${item.nome}</h4>
-                        </div>
-                        ${item.obs ? `<p class="text-xs text-gray-500 mt-1 ml-7 font-sans"><i class="fas fa-comment-alt mr-1"></i>${item.obs}</p>` : ''}
-                        <p class="text-orange-500 text-sm font-bold mt-1 ml-7 price-tag">R$ ${subtotal.toFixed(2)}</p>
-                    </div>
-                    <button onclick="removeFromCart(${index})" class="text-red-500 p-2 hover:bg-gray-800 rounded ml-2 transition">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg>
-                    </button>
-                `;
-                container.appendChild(div);
-            });
-
-            document.getElementById('cart-subtotal').innerText = `R$ ${total.toFixed(2)}`;
-            document.getElementById('cart-total').innerText = `R$ ${total.toFixed(2)}`;
-            footer.classList.remove('hidden');
-        }
-
-        function removeFromCart(index) {
-            cart.splice(index, 1);
-            updateCartUI();
-        }
-
-        function checkout() {
-            const name = document.getElementById('customer-name').value.trim();
-            if(!name) {
-                alert("Por favor, digite seu nome.");
-                return;
-            }
-
-            const total = cart.reduce((acc, item) => acc + (item.preco * item.qty), 0);
-            
-            const newOrder = {
-                id: orders.length + 1,
-                date: new Date().toLocaleDateString('pt-BR'),
-                time: new Date().toLocaleTimeString('pt-BR'),
-                customer: name,
-                items: cart.map(i => {
-                    const tempDiv = document.createElement("div");
-                    tempDiv.innerHTML = i.nome;
-                    const cleanName = tempDiv.innerText || tempDiv.textContent;
-                    return `${i.qty}x ${cleanName}`;
-                }).join(', '),
-                total: total,
-                status: 'Pendente'
-            };
-
-            orders.push(newOrder);
-            localStorage.setItem('burgerRegretsOrders', JSON.stringify(orders));
-
-            cart = [];
-            document.getElementById('customer-name').value = '';
-            updateCartUI();
-
-            alert(`Pedido #${newOrder.id} enviado com sucesso!\nAguarde o chamado pelo nome: ${name}`);
-            switchTab('menu');
-        }
-
-        // --- ADMIN LOGIN & LOGOUT ---
-        function checkAdmin() {
-            const pass = document.getElementById('admin-pass').value;
-            if(pass === 'del8admin') {
-                localStorage.setItem('isAdminLoggedIn', 'true');
-                document.getElementById('admin-login').classList.add('hidden');
-                document.getElementById('admin-content-wrapper').classList.remove('hidden');
-                switchAdminView('orders'); // Padrão
-                document.getElementById('admin-pass').value = '';
-                document.getElementById('login-error').classList.add('hidden');
-            } else {
-                document.getElementById('login-error').classList.remove('hidden');
-            }
-        }
-
-        function logoutAdmin() {
-            localStorage.removeItem('isAdminLoggedIn');
-            document.getElementById('admin-content-wrapper').classList.add('hidden');
-            document.getElementById('admin-login').classList.remove('hidden');
-        }
-
-        // --- ADMIN VIEW SWITCHER ---
-        function switchAdminView(viewName) {
-            const views = ['orders', 'menu'];
-            views.forEach(v => {
-                document.getElementById(`admin-${v}-view`).classList.add('hidden');
-                const btn = document.getElementById(`btn-admin-${v}`);
-                if(btn) {
-                    btn.classList.remove('bg-orange-600', 'text-white');
-                    btn.classList.add('text-gray-400');
-                }
-            });
-
-            document.getElementById(`admin-${viewName}-view`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`btn-admin-${viewName}`);
-            if(activeBtn) {
-                activeBtn.classList.remove('text-gray-400');
-                activeBtn.classList.add('bg-orange-600', 'text-white');
-            }
-
-            if(viewName === 'orders') {
-                updateAdminStats();
-            } else if(viewName === 'menu') {
-                renderAdminMenu();
-            }
-        }
-
-        // --- ADMIN STATS ---
-        function updateAdminStats() {
-            const totalRevenue = orders.reduce((acc, o) => acc + o.total, 0);
-            
-            document.getElementById('stat-revenue').innerText = `R$ ${totalRevenue.toFixed(2)}`;
-            document.getElementById('stat-orders').innerText = orders.length;
-
-            const list = document.getElementById('orders-list');
-            list.innerHTML = '';
-            
-            orders.slice().reverse().forEach(order => {
-                const div = document.createElement('div');
-                div.className = 'bg-gray-900 p-3 rounded border border-gray-800 text-sm hover:border-gray-700 transition';
-                div.innerHTML = `
-                    <div class="flex items-start gap-3">
-                        <div class="pt-1">
-                            <input type="checkbox" onchange="toggleSelection()" value="${order.id}" class="order-checkbox w-5 h-5 accent-orange-500 bg-black border-gray-600 rounded cursor-pointer">
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex justify-between font-bold text-white mb-1">
-                                <span>#${order.id} - ${order.customer}</span>
-                                <span class="text-orange-500">R$ ${order.total.toFixed(2)}</span>
-                            </div>
-                            <p class="text-gray-400 text-xs mb-1 font-sans">${order.date} às ${order.time}</p>
-                            <p class="text-gray-500 text-xs truncate border-t border-gray-800 pt-1 mt-1 font-sans">${order.items}</p>
-                        </div>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-            toggleSelection();
-        }
-
-        function toggleSelection() {
-            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
-            const btnDelete = document.getElementById('btn-delete-selected');
-            const countSpan = document.getElementById('delete-count');
-            
-            if (checkboxes.length > 0) {
-                btnDelete.classList.remove('hidden');
-                countSpan.innerText = checkboxes.length;
-            } else {
-                btnDelete.classList.add('hidden');
-            }
-        }
-
-        function deleteSelected() {
-            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
-            if (checkboxes.length === 0) return;
-
-            if(!confirm(`Tem certeza que deseja apagar ${checkboxes.length} pedidos?`)) return;
-
-            const idsToDelete = Array.from(checkboxes).map(cb => parseInt(cb.value));
-            
-            orders = orders.filter(order => !idsToDelete.includes(order.id));
-            localStorage.setItem('burgerRegretsOrders', JSON.stringify(orders));
-            updateAdminStats();
-        }
-
-        function clearAllHistory() {
-            if(orders.length === 0) {
-                alert("O histórico já está vazio.");
-                return;
-            }
-            if(confirm("Tem certeza que deseja apagar TODO o histórico?")) {
-                orders = [];
-                localStorage.setItem('burgerRegretsOrders', JSON.stringify(orders));
-                updateAdminStats();
-            }
-        }
-
-        function exportToCSV() {
-            if(orders.length === 0) {
-                alert("Sem dados para exportar.");
-                return;
-            }
-            
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "ID,Data,Hora,Cliente,Itens,Total,Status\n";
-
-            orders.forEach(row => {
-                const safeItems = row.items.replace(/,/g, ';'); 
-                csvContent += `${row.id},${row.date},${row.time},${row.customer},"${safeItems}",${row.total.toFixed(2)},${row.status}\n`;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "burger_relatorio.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // --- MODAL & ADICIONAR AO CARRINHO ---
-        function openItemModal(itemOrId) {
-            // Lógica para encontrar o item se for passado apenas o ID (string)
-            let item = itemOrId;
-            if (typeof itemOrId === 'string') {
-                for (const cat in menuData) {
-                    const found = menuData[cat].find(i => i.id === itemOrId);
-                    if (found) {
-                        item = found;
-                        break;
-                    }
-                }
-            }
-            
-            if (!item) {
-                console.error("Item não encontrado:", itemOrId);
-                return;
-            }
-
-            currentModalItem = item;
-            modalQtyVal = 1;
-            
-            // Limpa resultado anterior da IA
-            const aiResult = document.getElementById('ai-pairing-result');
-            if(aiResult) {
-                aiResult.classList.add('hidden');
-                aiResult.innerHTML = '';
-            }
-            
-            // Atualiza UI
+        function openItemModal(id) {
+            let item = null;
+            for(const cat in menuData) { item = menuData[cat].find(x => x.id === id); if(item) break; }
+            if(!item) return;
+            currentModalItem = item; modalQtyVal = 1;
             document.getElementById('modal-title').innerHTML = item.nome;
             document.getElementById('modal-desc').innerText = item.desc;
             document.getElementById('modal-price').innerText = `R$ ${parseFloat(item.preco).toFixed(2)}`;
-            document.getElementById('modal-qty').innerText = modalQtyVal;
+            document.getElementById('modal-qty').innerText = 1;
             document.getElementById('modal-obs').value = '';
-            
             document.getElementById('modal-item').classList.remove('hidden');
         }
-
-        function closeModal() {
-            document.getElementById('modal-item').classList.add('hidden');
-        }
-        function changeModalQty(d) { modalQtyVal+=d; if(modalQtyVal<1) modalQtyVal=1; document.getElementById('modal-qty').innerText=modalQtyVal; document.getElementById('modal-price').innerText = `R$ ${(currentModalItem.preco*modalQtyVal).toFixed(2)}`; }
-        function confirmAddToCart() { 
-            const obs=document.getElementById('modal-obs').value; 
-            cart.push({...currentModalItem, qty: modalQtyVal, obs: obs, uniqueId: Date.now()}); 
-            updateCartUI(); closeModal(); 
-            const tempDiv = document.createElement("div"); tempDiv.innerHTML = currentModalItem.nome;
-            showToast(`+ ${modalQtyVal}x ${tempDiv.innerText}`);
-        }
-        
-        function openMenuEditModal(cat=null, idx=null){ const m=document.getElementById('modal-menu-edit'); document.getElementById('menu-edit-title').innerText=cat?'Editar':'Novo'; if(cat){ const i=menuData[cat][idx]; document.getElementById('edit-cat').value=cat; document.getElementById('edit-name').value=i.nome; document.getElementById('edit-desc').value=i.desc; document.getElementById('edit-price').value=i.preco; document.getElementById('edit-original-cat').value=cat; document.getElementById('edit-index').value=idx; } else { document.getElementById('edit-index').value=''; document.getElementById('edit-name').value=''; document.getElementById('edit-desc').value=''; document.getElementById('edit-price').value=''; } m.classList.remove('hidden'); }
-        function closeMenuEditModal(){ document.getElementById('modal-menu-edit').classList.add('hidden'); }
-        function saveMenuItem(){ const cat=document.getElementById('edit-cat').value; const name=document.getElementById('edit-name').value; const desc=document.getElementById('edit-desc').value; const price=parseFloat(document.getElementById('edit-price').value); const oCat=document.getElementById('edit-original-cat').value; const idxStr=document.getElementById('edit-index').value; if(!name||!desc||isNaN(price))return alert('Preencha tudo'); let id=''; if(idxStr===''){ const p=cat==='BURGER REGRETS'?'BR':(cat==='ACOMPANHAMENTOS'?'AC':'BB'); id=p+(menuData[cat]?menuData[cat].length+1:1)+Math.random().toString(36).substr(2,2).toUpperCase(); } const newItem={id: idxStr!==''&&cat===oCat?menuData[oCat][idxStr].id:id, nome:name, desc:desc, preco:price}; if(idxStr!==''){ const i=parseInt(idxStr); if(oCat===cat) menuData[cat][i]=newItem; else { menuData[oCat].splice(i,1); if(!menuData[cat])menuData[cat]=[]; menuData[cat].push(newItem); } } else { if(!menuData[cat])menuData[cat]=[]; menuData[cat].push(newItem); } localStorage.setItem('del8MenuData', JSON.stringify(menuData)); renderAdminMenu(); renderMenu('all'); closeMenuEditModal(); }
-        function deleteMenuItem(c,i){ if(confirm('Apagar item?')){ menuData[c].splice(i,1); localStorage.setItem('del8MenuData', JSON.stringify(menuData)); renderAdminMenu(); renderMenu('all'); } }
-        function openAiChefModal(){ document.getElementById('modal-ai-chef').classList.remove('hidden'); document.getElementById('ai-chef-result').classList.add('hidden'); document.getElementById('ai-chef-input').value=''; }
-        function closeAiChefModal(){ document.getElementById('modal-ai-chef').classList.add('hidden'); }
-        function closeCartAi() { document.getElementById('cart-ai-response').classList.add('hidden'); }
-        
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
-            toast.classList.remove('hidden');
-            void toast.offsetWidth; 
-            toast.classList.remove('opacity-0', 'translate-y-[-20px]');
-            
+        function closeModal() { document.getElementById('modal-item').classList.add('hidden'); }
+        function changeModalQty(d) { modalQtyVal+=d; if(modalQtyVal<1)modalQtyVal=1; document.getElementById('modal-qty').innerText=modalQtyVal; document.getElementById('modal-price').innerText=`R$ ${(currentModalItem.preco*modalQtyVal).toFixed(2)}`; }
+        function confirmAddToCart() {
+            const btn = document.getElementById('btn-add-to-cart');
+            const originalContent = btn.innerHTML;
+            const originalClass = btn.className;
+            btn.innerHTML = '<svg class="icon animate-bounce mr-2" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> ADICIONADO!';
+            btn.className = "bg-green-600 text-white font-bold py-3 px-6 rounded-lg ml-4 flex-1 transition-all transform scale-105 shadow-lg flex justify-center items-center";
+            const obs = document.getElementById('modal-obs').value;
             setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-[-20px]');
-                setTimeout(() => toast.classList.add('hidden'), 300);
-            }, 2000);
+                cart.push({...currentModalItem, qty: modalQtyVal, obs, uniqueId: Date.now()});
+                updateCartUI(); 
+                closeModal();
+                setTimeout(() => { btn.innerHTML = originalContent; btn.className = originalClass; }, 200);
+            }, 600);
         }
+        async function checkout() {
+            const name = document.getElementById('customer-name').value.trim();
+            if(!name) return alert("Digite seu nome.");
+            if(cart.length===0) return alert("Carrinho vazio.");
+            const total = cart.reduce((a,b)=>a+(b.preco*b.qty),0);
+            const items = cart.map(i => { const d=document.createElement('div'); d.innerHTML=i.nome; return `${i.qty}x ${d.innerText}`; }).join(', ');
+            const order = { id: 0, date: new Date().toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), customer: name, items, total, status: 'Pendente' };
+            await sendOrder(order);
+            cart = []; document.getElementById('customer-name').value = ''; updateCartUI();
+            alert("Pedido enviado!"); switchTab('menu');
+        }
+        function toggleOrderStatus(id) {
+             let order = localOrders.find(o => o.id == id);
+             if (order) {
+                 order.status = order.status === 'Pronto' ? 'Pendente' : 'Pronto';
+                 localStorage.setItem('del8LocalOrders', JSON.stringify(localOrders));
+                 updateAdminStats();
+             }
+        }
+        async function updateAdminStats() {
+            const orders = await fetchOrders();
+            const pendingList = document.getElementById('pending-orders-list');
+            const completedList = document.getElementById('completed-orders-list');
+            if(!pendingList || !completedList) return;
+            pendingList.innerHTML = ''; completedList.innerHTML = '';
+            document.getElementById('stat-orders').innerText = orders.length;
+            document.getElementById('stat-revenue').innerText = `R$ ${orders.reduce((a,b)=>a+b.total,0).toFixed(2)}`;
+            if(orders.length === 0) { pendingList.innerHTML = '<p class="text-center text-gray-600 mt-4 text-xs">Sem pedidos pendentes</p>'; return; }
+            const sortedOrders = orders.slice().reverse();
+            sortedOrders.forEach(o => {
+                const isReady = o.status === 'Pronto';
+                const statusColor = isReady ? 'border-green-500/50 bg-green-900/10 opacity-75' : 'border-orange-500/30 bg-gray-900 shadow-lg';
+                const toggleBtn = isReady ? `<button onclick="toggleOrderStatus('${o.id}')" class="text-gray-500 hover:text-orange-500 transition-colors" title="Marcar como Pendente"><svg class="icon text-xl" viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button>` : `<button onclick="toggleOrderStatus('${o.id}')" class="bg-green-600 hover:bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition transform active:scale-95" title="Marcar como Pronto"><svg class="icon text-sm" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></button>`;
+                const html = `<div class="p-3 rounded border ${statusColor} text-sm mb-2 transition-all draggable" draggable="true" ondragstart="drag(event, '${o.id}')" id="order-card-${o.id}"><div class="flex items-start gap-3"><div class="pt-1"><input type="checkbox" onchange="toggleSelection()" value="${o.id}" class="order-checkbox w-5 h-5 accent-orange-500 bg-black border-gray-600 rounded cursor-pointer"></div><div class="flex-1"><div class="flex justify-between items-center mb-1"><span class="font-bold text-white">#${o.id || '?'} - ${o.customer}</span><div class="flex items-center gap-2"><span class="text-orange-500 font-bold">R$ ${parseFloat(o.total).toFixed(2)}</span>${toggleBtn}</div></div><p class="text-gray-400 text-xs">${o.date} ${o.time}</p><p class="text-gray-300 text-xs border-t border-gray-800 pt-2 mt-2 font-sans leading-relaxed">${o.items}</p></div></div></div>`;
+                if (isReady) { completedList.innerHTML += html; } else { pendingList.innerHTML += html; }
+            });
+            toggleSelection();
+        }
+        function renderAdminMenu() {
+            const l = document.getElementById('admin-menu-list'); if(!l)return; l.innerHTML='';
+            Object.entries(menuData).forEach(([cat, items]) => {
+                l.innerHTML += `<div class="text-orange-500 font-bold text-xs uppercase mt-4 border-b border-gray-800">${cat}</div>`;
+                items.forEach((i, idx) => {
+                    const tmp = document.createElement("div"); tmp.innerHTML=i.nome;
+                    l.innerHTML += `<div class="bg-gray-900 p-3 rounded border border-gray-800 flex justify-between items-center mt-2"><div class="flex-1"><span class="text-xs bg-black text-gray-500 px-1">${i.id}</span> <span class="font-bold text-white text-sm">${tmp.innerText}</span><p class="text-xs text-gray-500 truncate">${i.desc}</p></div><div class="flex gap-2"><button onclick="openMenuEditModal('${cat}',${idx})" class="text-blue-400">✎</button><button onclick="deleteMenuItem('${cat}',${idx})" class="text-red-400">🗑</button></div></div>`;
+                });
+            });
+        }
+        function toggleSelection(){const btn=document.getElementById('btn-delete-selected'); if(!btn)return; const c=document.querySelectorAll('.order-checkbox:checked').length; btn.classList.toggle('hidden', c===0); if(c>0){const counter=document.getElementById('delete-count'); if(counter)counter.innerText=c;}}
+        function showToast(m){const t=document.getElementById('toast'); document.getElementById('toast-msg').innerText=m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),2000);}
+        function filterCategory(c) { document.querySelectorAll('.cat-btn').forEach(b => { const m = (c==='all'&&b.innerText==='Todos')||(c!=='all'&&b.innerText.includes(c.split(' ')[0])); b.classList.toggle('bg-orange-600',m); b.classList.toggle('text-white',m); b.classList.toggle('bg-black',!m); }); renderMenu(c); }
+        function switchTab(t) { ['menu','cart','admin'].forEach(v=>document.getElementById(`view-${v}`).classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); const nm = document.getElementById('nav-menu'); const nc = document.getElementById('nav-cart'); if(nm) nm.classList.toggle('text-orange-500', t==='menu'); if(nc) nc.classList.toggle('text-orange-500', t==='cart'); window.scrollTo(0,0); if(t==='admin' && localStorage.getItem('isAdminLoggedIn')==='true'){document.getElementById('admin-login').classList.add('hidden');document.getElementById('admin-content-wrapper').classList.remove('hidden');switchAdminView('orders');} }
+        function checkAdmin(){if(document.getElementById('admin-pass').value==='del8admin'){localStorage.setItem('isAdminLoggedIn','true'); document.getElementById('admin-login').classList.add('hidden'); document.getElementById('admin-content-wrapper').classList.remove('hidden'); switchAdminView('orders');}else document.getElementById('login-error').classList.remove('hidden');}
+        function logoutAdmin(){localStorage.removeItem('isAdminLoggedIn'); document.getElementById('admin-content-wrapper').classList.add('hidden'); document.getElementById('admin-login').classList.remove('hidden');}
+        function switchAdminView(v){document.getElementById('admin-orders-view').classList.toggle('hidden',v!=='orders'); document.getElementById('admin-menu-view').classList.toggle('hidden',v!=='menu'); document.getElementById('btn-admin-orders').classList.toggle('bg-orange-600',v==='orders'); document.getElementById('btn-admin-menu').classList.toggle('bg-orange-600',v==='menu'); if(v==='orders') updateAdminStats(); else renderAdminMenu();}
+        function openMenuEditModal(c,i){document.getElementById('modal-menu-edit').classList.remove('hidden'); if(c){const it=menuData[c][i]; document.getElementById('edit-cat').value=c; document.getElementById('edit-name').value=it.nome; document.getElementById('edit-desc').value=it.desc; document.getElementById('edit-price').value=it.preco; document.getElementById('edit-original-cat').value=c; document.getElementById('edit-index').value=i; document.getElementById('menu-edit-title').innerText='Editar';}else{document.getElementById('edit-index').value=''; document.getElementById('menu-edit-title').innerText='Novo'; document.getElementById('edit-name').value=''; document.getElementById('edit-desc').value=''; document.getElementById('edit-price').value='';}}
+        function closeMenuEditModal(){document.getElementById('modal-menu-edit').classList.add('hidden');}
+        function deleteSelected(){if(!confirm('Apagar selecionados?'))return; const ids=Array.from(document.querySelectorAll('.order-checkbox:checked')).map(c=>parseInt(c.value)); if(serverUrl) { /* Implement server delete logic */ } else { localOrders=localOrders.filter(o=>!ids.includes(o.id)); localStorage.setItem('del8LocalOrders',JSON.stringify(localOrders)); updateAdminStats(); } }
+        function updateCartUI() {
+            const c = document.getElementById('cart-items-container'), f = document.getElementById('cart-footer');
+            if(!c) return;
+            if(cart.length===0) { c.innerHTML='<div class="text-center text-gray-500 py-10">Carrinho vazio</div>'; f.classList.add('hidden'); document.getElementById('btn-analyze-cart').classList.add('hidden'); document.getElementById('btn-diet-excuse').classList.add('hidden'); }
+            else { 
+                document.getElementById('btn-analyze-cart').classList.remove('hidden'); document.getElementById('btn-diet-excuse').classList.remove('hidden');
+                f.classList.remove('hidden'); c.innerHTML=''; let t=0; 
+                cart.forEach((i,x)=>{
+                    t+=i.preco*i.qty; 
+                    c.innerHTML+=`<div class="bg-gray-900 rounded p-2 flex justify-between items-center mb-2"><div class="text-sm text-white"><span class="text-orange-500 font-bold">${i.qty}x</span> ${i.nome}</div><button onclick="removeFromCart(${x})" class="text-red-500">✕</button></div>`;
+                }); 
+                document.getElementById('cart-subtotal').innerText=`R$ ${t.toFixed(2)}`; document.getElementById('cart-total').innerText=`R$ ${t.toFixed(2)}`; 
+            }
+            const q = cart.reduce((a,b)=>a+b.qty,0); 
+            document.querySelectorAll('#header-cart-count, #nav-cart-badge').forEach(e=>{e.innerText=q; e.classList.toggle('hidden',q===0)});
+        }
+        function removeFromCart(i) { cart.splice(i,1); updateCartUI(); }
+
+        // AI
+        const apiKey = ""; 
+        async function callGemini(p, s) {
+            try { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:p}]}], systemInstruction:{parts:[{text:s}]}}) }); const d = await r.json(); return d.candidates?.[0]?.content?.parts?.[0]?.text || "Erro IA"; } catch(e) { return "IA offline"; }
+        }
+        function closeCartAi() { document.getElementById('cart-ai-response').classList.add('hidden'); }
+        async function analyzeCart(){if(cart.length===0)return; const b=document.getElementById('btn-analyze-cart'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await callGemini("Analise", `Garçom sarcástico DEL 8. Pedido: ${cart.map(i=>i.nome).join(', ')}. Comente curto.`); document.getElementById('cart-ai-text').innerText=r; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
+        async function generateDietExcuse(){if(cart.length===0)return; const b=document.getElementById('btn-diet-excuse'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await callGemini("Desculpa", `Advogado engraçado. Cliente comeu: ${cart.map(i=>i.nome).join(', ')}. Desculpa p/ nutricionista. Curta.`); document.getElementById('cart-ai-text').innerText=`🤥 "${r}"`; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
+        async function generateSlogan(){const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await callGemini("Slogan", "Slogan curto/moderno/neon DEL 8."); alert(`📢 "${r.replace(/["']/g,"")}"`); b.innerText=h; b.disabled=false;}
+        async function generateAIDescription(){const n=document.getElementById('edit-name').value; if(!n)return alert('Nome?'); const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await callGemini("Descrição", `Mkt DEL 8. Descrição curta para: ${n}`); document.getElementById('edit-desc').value=r.replace(/["']/g,""); b.innerText=h; b.disabled=false;}
+        
+        // Touch Drag & Drop Polyfill for Mobile
+        window.drag = function(ev, id) {
+            ev.dataTransfer.setData("text/plain", id);
+            ev.target.classList.add('dragging');
+        }
+        window.allowDrop = function(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('drag-over');
+        }
+        window.leaveDrop = function(ev) {
+            ev.currentTarget.classList.remove('drag-over');
+        }
+        window.drop = function(ev, status) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drag-over');
+            const id = ev.dataTransfer.getData("text/plain");
+            const draggedElement = document.getElementById(`order-card-${id}`);
+            if(draggedElement) draggedElement.classList.remove('dragging');
+            
+            // Logic for drop update
+            let ordersToSearch = serverUrl ? window.orders : localOrders;
+            let order = ordersToSearch.find(o => o.id == id);
+            
+            if (order && order.status !== status) {
+                 order.status = status;
+                 if(!serverUrl) {
+                     localStorage.setItem('del8LocalOrders', JSON.stringify(localOrders));
+                 }
+                 // In a real server scenario, we would POST the update here.
+                 // For local demo, we just update state and refresh.
+                 updateAdminStats();
+            }
+        }
+
+        // Attach globals
+        window.saveServerConfig = saveServerConfig;
+        window.openItemModal = openItemModal;
+        window.closeModal = closeModal;
+        window.changeModalQty = changeModalQty;
+        window.confirmAddToCart = confirmAddToCart;
+        window.removeFromCart = removeFromCart;
+        window.checkout = checkout;
+        window.filterCategory = filterCategory;
+        window.switchTab = switchTab;
+        window.checkAdmin = checkAdmin;
+        window.logoutAdmin = logoutAdmin;
+        window.switchAdminView = switchAdminView;
+        window.updateAdminStats = updateAdminStats;
+        window.openMenuEditModal = openMenuEditModal;
+        window.closeMenuEditModal = closeMenuEditModal;
+        window.saveMenuItem = saveMenuItem;
+        window.deleteMenuItem = deleteMenuItem;
+        window.toggleSelection = toggleSelection;
+        window.deleteSelected = deleteSelected;
+        window.clearAllHistory = clearAllHistory;
+        window.toggleOrderStatus = toggleOrderStatus;
+        window.analyzeCart = analyzeCart;
+        window.generateDietExcuse = generateDietExcuse;
+        window.closeCartAi = closeCartAi;
+        window.generateSlogan = generateSlogan;
+        window.generateAIDescription = generateAIDescription;
     </script>
 </body>
 </html>

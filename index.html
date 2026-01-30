@@ -1,457 +1,748 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell
-} from 'recharts';
-import { 
-  TrendingUp, 
-  ShieldAlert, 
-  Target, 
-  Wallet, 
-  Calculator, 
-  Settings,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Info,
-  Zap,
-  Layers,
-  ArrowRight,
-  BarChart3,
-  Activity,
-  PieChart as PieChartIcon,
-  Download,
-  Upload,
-  FileSpreadsheet,
-  RefreshCcw,
-  Trash2
-} from 'lucide-react';
-
-const App = () => {
-  // --- ESTADO INICIAL ---
-  const [config, setConfig] = useState({
-    bancaInicial: 1000,
-    objetivoMensal: 60,
-    objetivoDiario: 1.75,
-    stopLossDiario: 3.0,
-    risco: 'Moderado'
-  });
-
-  const [bancaAtual, setBancaAtual] = useState(1000);
-  const [historico, setHistorico] = useState([]);
-  const [view, setView] = useState('dashboard');
-  
-  // Controle de Ciclo (1, 2 ou 3)
-  const [cicloStep, setCicloStep] = useState(1);
-  const [lucroAcumuladoCiclo, setLucroAcumuladoCiclo] = useState(0);
-  
-  // Novo estado para confirmação de Reset
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-
-  const fileInputRef = useRef(null);
-
-  // --- CÁLCULOS MATEMÁTICOS ---
-  const apostaBase = useMemo(() => (bancaAtual || 0) * 0.01, [bancaAtual]);
-  
-  const cicloValues = useMemo(() => ({
-    step1: apostaBase,
-    step2: apostaBase * 2,
-    step3: apostaBase * 4,
-  }), [apostaBase]);
-
-  const valorEntradaAtual = useMemo(() => {
-    if (cicloStep === 1) return cicloValues.step1;
-    if (cicloStep === 2) return cicloValues.step2;
-    return cicloValues.step3;
-  }, [cicloStep, cicloValues]);
-
-  // --- MÉTRICAS DE DESEMPENHO AVANÇADAS ---
-  const stats = useMemo(() => {
-    const totalEntradas = historico.length;
-    const wins = historico.filter(h => h.resultado === 'V').length;
-    const losses = historico.filter(h => h.resultado === 'R').length;
-    const taxaAcerto = totalEntradas > 0 ? (wins / totalEntradas) * 100 : 0;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <meta name="application-name" content="DEL 8">
     
-    const ciclosCompletos = historico.filter(h => h.status === "Ciclo Finalizado").length;
-    const ciclosIniciados = historico.filter(h => 
-      h.status === "Passo 1 OK" || (h.resultado === 'R' && h.status === "Ciclo Interrompido")
-    ).length; 
-    const eficienciaCiclo = ciclosIniciados > 0 ? (ciclosCompletos / ciclosIniciados) * 100 : 0;
+    <title>DEL 8 - Sistema Local</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js para Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #000000; color: #e5e7eb; overscroll-behavior-y: none; user-select: none; }
+        h1, h2, h3, h4, .brand-font, .cat-btn, .price-tag { font-family: 'Righteous', cursive; letter-spacing: 0.05em; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .card-gradient { background: linear-gradient(145deg, #111111, #0a0a0a); border: 1px solid #333; }
+        .ai-gradient { background: linear-gradient(135deg, #f97316, #ef4444); }
+        .active-tab { color: #f97316; border-bottom: 2px solid #f97316; }
+        .safe-bottom { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #000000; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        input:focus, textarea:focus, select:focus { border-color: #f97316 !important; outline: none; ring-color: #f97316 !important; }
+        .icon { width: 1em; height: 1em; display: inline-block; fill: currentColor; }
+        .drag-over { background-color: rgba(249, 115, 22, 0.15) !important; border: 2px dashed #f97316 !important; }
+        .draggable { cursor: grab; touch-action: none; }
+        .dragging { opacity: 0.5; background-color: #1f1f1f; }
+        #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; pointer-events: none; }
+        /* Table Styles for History */
+        .history-table th { text-align: left; padding: 8px; border-bottom: 1px solid #333; color: #f97316; font-family: 'Righteous', cursive; }
+        .history-table td { padding: 8px; border-bottom: 1px solid #1f1f1f; font-size: 0.85rem; }
+        .history-table tr:last-child td { border-bottom: none; }
+    </style>
+</head>
+<body class="safe-bottom">
 
-    const lucroTotal = (bancaAtual || 0) - (config.bancaInicial || 0);
+    <div id="loading-overlay">
+        <div class="text-center">
+            <svg class="icon text-orange-500 text-6xl animate-pulse mb-4" viewBox="0 0 24 24"><path d="M20 10C20 5 4 5 4 10H20ZM3 11H21V14H3V11ZM4 15H20V18C20 20 4 20 4 18V15Z"></path></svg>
+            <h2 class="text-white text-xl font-bold tracking-widest">CARREGANDO...</h2>
+        </div>
+    </div>
 
-    const lucroBruto = historico.reduce((acc, curr) => {
-        const val = parseFloat(String(curr.lucro).replace(/[^+0-9.-]/g, '')) || 0;
-        return val > 0 ? acc + val : acc;
-    }, 0);
-    const perdaBruta = Math.abs(historico.reduce((acc, curr) => {
-        const val = parseFloat(String(curr.lucro).replace(/[^+0-9.-]/g, '')) || 0;
-        return val < 0 ? acc + val : acc;
-    }, 0));
+    <header class="fixed top-0 w-full bg-black border-b border-gray-900 z-50 shadow-md">
+        <div class="flex items-center justify-between px-4 py-3 max-w-4xl mx-auto">
+            <div class="flex items-center space-x-2">
+                <svg class="icon text-orange-500 text-3xl" viewBox="0 0 24 24"><path d="M20 10C20 5 4 5 4 10H20ZM3 11H21V14H3V11ZM4 15H20V18C20 20 4 20 4 18V15Z"></path></svg>
+                <h1 class="text-2xl font-bold tracking-wider text-white">DEL<span class="text-orange-500">8</span></h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="connection-status" class="flex items-center gap-1 text-[10px] text-gray-500 font-mono">
+                    <span id="status-dot" class="h-2 w-2 rounded-full bg-red-500 inline-block"></span> <span id="status-text">LOCAL</span>
+                </div>
+                <button onclick="window.switchTab('admin')" class="text-gray-600 hover:text-orange-500 transition"><svg class="icon text-lg" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path></svg></button>
+                <div class="relative cursor-pointer" onclick="window.switchTab('cart')">
+                    <svg class="icon text-xl text-gray-300 hover:text-orange-500 transition" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path><circle cx="10.5" cy="19.5" r="1.5"></circle><circle cx="17.5" cy="19.5" r="1.5"></circle></svg>
+                    <span id="header-cart-count" class="absolute -top-2 -right-2 bg-orange-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
 
-    const profitFactor = perdaBruta > 0 ? (lucroBruto / perdaBruta).toFixed(2) : (lucroBruto > 0 ? lucroBruto.toFixed(2) : "0.00");
-    const roi = config.bancaInicial > 0 ? (lucroTotal / config.bancaInicial) * 100 : 0;
+    <main class="mt-16 max-w-4xl mx-auto p-4 relative">
+        <!-- MENU -->
+        <div id="view-menu" class="animate-fade-in pb-16">
+            <div class="flex space-x-4 overflow-x-auto hide-scroll pb-4 mb-2 sticky top-16 bg-black z-40 py-2 border-b border-gray-900/50">
+                <button onclick="window.filterCategory('all')" class="cat-btn bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap active-cat">Todos</button>
+                <button onclick="window.filterCategory('BURGER REGRETS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Burgers</button>
+                <button onclick="window.filterCategory('ACOMPANHAMENTOS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Acompanhamentos</button>
+                <button onclick="window.filterCategory('BEBIDAS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Bebidas</button>
+            </div>
+            <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
 
-    return { 
-        totalEntradas, wins, losses, taxaAcerto, 
-        ciclosCompletos, ciclosIniciados, eficienciaCiclo,
-        profitFactor, roi, lucroTotal,
-        pieData: [
-            { name: 'Wins', value: wins, color: '#10b981' },
-            { name: 'Losses', value: losses, color: '#ef4444' }
-        ]
-    };
-  }, [historico, bancaAtual, config.bancaInicial]);
+        <!-- CARRINHO -->
+        <div id="view-cart" class="hidden animate-fade-in h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar p-1">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
+                <h2 class="text-2xl font-bold text-white">Seu Carrinho</h2>
+                <div class="flex gap-2">
+                    <button id="btn-analyze-cart" onclick="window.analyzeCart()" class="hidden text-xs bg-gray-900 text-orange-400 border border-orange-500/50 px-3 py-1 rounded-full flex items-center gap-2 hover:bg-gray-800 transition font-bold"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-12h2v6h-2zm0 8h2v2h-2z"></path></svg> <span>Julgar</span></button>
+                    <button id="btn-diet-excuse" onclick="window.generateDietExcuse()" class="hidden text-xs bg-gray-900 text-green-400 border border-green-500/50 px-3 py-1 rounded-full flex items-center gap-2 hover:bg-gray-800 transition font-bold"><svg class="icon" viewBox="0 0 24 24"><path d="M2 22a8 8 0 1 1 16 0h-2a6 6 0 1 0-12 0H2zm8-9c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-4c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg> <span>Desculpa p/ Nutri</span></button>
+                </div>
+            </div>
+            <div id="cart-ai-response" class="hidden mb-4 bg-gray-900 border border-orange-500/30 p-3 rounded-lg text-sm text-gray-300 relative mt-2">
+                <svg class="icon absolute top-2 left-2 text-orange-500/20 text-2xl" viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"></path></svg>
+                <div id="cart-ai-text" class="pl-4 italic font-sans"></div>
+                <button onclick="window.closeCartAi()" class="absolute top-1 right-2 text-gray-500 hover:text-white">&times;</button>
+            </div>
+            <div id="cart-items-container" class="space-y-4 mb-6 mt-4"></div>
+            <div id="cart-footer" class="hidden bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-800 mb-4">
+                <div class="flex justify-between items-center mb-2 text-gray-400 text-sm"><span>Subtotal</span><span id="cart-subtotal" class="font-bold font-mono text-white">R$ 0,00</span></div>
+                <div class="flex justify-between items-center mb-4 text-white text-xl font-bold border-t border-gray-800 pt-2"><span>Total</span><span id="cart-total" class="text-orange-500">R$ 0,00</span></div>
+                <input type="text" id="customer-name" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-orange-500 font-sans mb-4" placeholder="Digite seu nome...">
+                <button onclick="window.checkout()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-lg flex justify-center items-center gap-2">FINALIZAR PEDIDO</button>
+            </div>
+        </div>
 
-  const statusRisco = useMemo(() => {
-    const base = config.bancaInicial || 1;
-    const percentual = (bancaAtual / base) * 100;
-    if (percentual > 95) return { cor: 'bg-green-500', label: 'NORMAL', exposicao: '3%' };
-    if (percentual >= 90) return { cor: 'bg-yellow-500', label: 'ATENÇÃO', exposicao: '2%' };
-    return { cor: 'bg-red-500', label: 'CRÍTICO', exposicao: '1%' };
-  }, [bancaAtual, config.bancaInicial]);
+        <!-- ADMIN -->
+        <div id="view-admin" class="hidden animate-fade-in flex flex-col h-[calc(100vh-6rem)]">
+            <div id="admin-login" class="max-w-xs mx-auto mt-10 p-6 bg-gray-900 rounded-xl text-center border border-gray-800 shadow-2xl">
+                <div class="text-orange-500 text-5xl mb-4"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z"></path></svg></div>
+                <h3 class="text-xl font-bold mb-4 text-white">Área Restrita</h3>
+                <input type="password" id="admin-pass" class="w-full bg-black border border-gray-700 rounded p-3 mb-4 text-center text-white focus:border-orange-500" placeholder="Digite a Senha">
+                <button onclick="window.checkAdmin()" class="w-full bg-orange-600 text-white font-bold py-3 rounded hover:bg-orange-500">ENTRAR</button>
+                <p id="login-error" class="text-red-500 text-xs mt-3 hidden">Senha incorreta!</p>
+                <button onclick="window.switchTab('menu')" class="mt-4 text-xs text-gray-500 hover:text-white underline">Voltar ao Menu</button>
+            </div>
 
-  const projecoes = useMemo(() => {
-    const data = [];
-    let tempBanca = bancaAtual || 0;
-    const taxaDiaria = (config.objetivoDiario || 0) / 100;
-    for (let i = 0; i <= 30; i++) {
-      data.push({ dia: `Dia ${i}`, valor: parseFloat(tempBanca.toFixed(2)) });
-      tempBanca *= (1 + taxaDiaria);
-    }
-    return data;
-  }, [bancaAtual, config.objetivoDiario]);
+            <div id="admin-content-wrapper" class="hidden flex flex-col h-full">
+                <div class="bg-gray-800 p-2 mb-4 rounded border border-gray-700 flex flex-col gap-2">
+                    <label class="text-[10px] text-gray-400 uppercase font-bold">Endereço do Servidor</label>
+                    <div class="flex gap-2"><input type="text" id="server-url-input" class="flex-1 bg-black border border-gray-600 rounded p-1 text-xs text-white" placeholder="Deixe vazio para modo local"><button onclick="window.saveServerConfig()" class="bg-blue-600 text-white text-xs px-3 rounded font-bold">SALVAR</button></div>
+                    <p id="server-status-msg" class="text-[10px] text-gray-500">Atual: <span id="current-server-display">Local (Offline)</span></p>
+                </div>
+                
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-white">Painel Admin</h2>
+                    <div class="flex gap-2">
+                        <button onclick="window.closeRegister()" class="text-xs bg-red-900/50 hover:bg-red-800 text-red-200 border border-red-800 px-3 py-1 rounded font-bold transition flex items-center gap-1">FECHAR CAIXA</button>
+                        <button onclick="window.logoutAdmin()" class="text-xs text-gray-500 border border-gray-700 px-2 py-1 rounded hover:bg-gray-800">Sair</button>
+                    </div>
+                </div>
+                
+                <!-- Abas Admin Atualizadas -->
+                <div class="flex gap-2 p-1 bg-gray-900 rounded-lg border border-gray-800 mb-4">
+                    <button onclick="window.switchAdminView('orders')" id="btn-admin-orders" class="flex-1 py-2 text-sm font-bold rounded bg-orange-600 text-white">PEDIDOS</button>
+                    <button onclick="window.switchAdminView('menu')" id="btn-admin-menu" class="flex-1 py-2 text-sm font-bold rounded text-gray-400">CARDÁPIO</button>
+                    <!-- NOVA ABA ANÁLISE -->
+                    <button onclick="window.switchAdminView('analysis')" id="btn-admin-analysis" class="flex-1 py-2 text-sm font-bold rounded text-gray-400 flex items-center justify-center gap-1"><svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg> ANÁLISE</button>
+                </div>
 
-  // --- LÓGICA DE BACKUP (EXCEL/CSV) ---
-  const exportToCSV = () => {
-    if (historico.length === 0) return;
-    const headers = ["Data/Hora", "Stake (R$)", "Resultado", "Lucro/Prej (R$)", "Saldo (R$)", "Status"];
-    const rows = historico.map(h => [h.data, h.valor, h.resultado === 'V' ? 'GREEN' : 'RED', h.lucro, h.bancaResultante, h.status]);
-    const csvContent = "\ufeff" + [headers, ...rows].map(e => e.join(";")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `GESTAO_PRO_BACKUP_${new Date().toISOString().slice(0,10)}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+                <div id="admin-orders-view" class="flex-1 overflow-y-auto custom-scrollbar p-1">
+                    <div class="grid grid-cols-2 gap-2 mb-6">
+                        <div class="bg-gray-900 p-3 rounded-lg border-l-2 border-green-500 shadow"><p class="text-[10px] text-gray-500 uppercase font-sans">Hoje (Fechado)</p><p id="stat-daily" class="text-lg font-bold text-white">R$ 0,00</p></div>
+                        <div class="bg-gray-900 p-3 rounded-lg border-l-2 border-blue-500 shadow"><p class="text-[10px] text-gray-500 uppercase font-sans">Semana</p><p id="stat-weekly" class="text-lg font-bold text-white">R$ 0,00</p></div>
+                        <div class="bg-gray-900 p-3 rounded-lg border-l-2 border-purple-500 shadow"><p class="text-[10px] text-gray-500 uppercase font-sans">Mês</p><p id="stat-monthly" class="text-lg font-bold text-white">R$ 0,00</p></div>
+                        <div class="bg-gray-900 p-3 rounded-lg border-l-2 border-orange-500 shadow"><p class="text-[10px] text-gray-500 uppercase font-sans">Total Geral</p><p id="stat-revenue" class="text-lg font-bold text-white">R$ 0,00</p></div>
+                    </div>
+                    
+                    <div class="flex justify-between items-end mb-3 border-b border-gray-800 pb-2">
+                        <h3 class="font-bold text-gray-500 text-sm uppercase">Caixa Atual (<span id="stat-orders">0</span>)</h3>
+                        <div class="flex gap-2">
+                            <button onclick="window.openHistoryModal()" class="text-xs bg-blue-900/50 hover:bg-blue-800 text-blue-200 border border-blue-800 px-2 py-1 rounded font-bold">Relatório</button>
+                            <button onclick="window.exportToCSV()" class="text-xs bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 px-2 py-1 rounded flex items-center gap-1"><svg class="icon text-green-500" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"></path></svg> Exportar</button>
+                            <button onclick="window.clearAllHistoryManual()" class="text-xs text-red-500 border border-red-900 px-2 py-1 rounded">Limpar</button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20 font-sans h-full">
+                        <div class="flex flex-col"><h4 class="text-orange-500 font-bold text-xs uppercase mb-2 border-b border-orange-500/30 pb-1">Pendentes</h4><div id="pending-orders-list" class="space-y-3 min-h-[150px] rounded-lg p-1 transition-colors" ondrop="window.drop(event, 'Pendente')" ondragover="window.allowDrop(event)" ondragleave="window.leaveDrop(event)"></div></div>
+                        <div class="flex flex-col"><h4 class="text-green-500 font-bold text-xs uppercase mb-2 border-b border-green-500/30 pb-1">Prontos</h4><div id="completed-orders-list" class="space-y-3 min-h-[150px] rounded-lg p-1 transition-colors" ondrop="window.drop(event, 'Pronto')" ondragover="window.allowDrop(event)" ondragleave="window.leaveDrop(event)"></div></div>
+                    </div>
+                </div>
 
-  const importFromCSV = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const text = e.target.result;
-        const lines = text.split("\n").filter(line => line.trim() !== "");
-        const importedHistory = lines.slice(1).map((line, index) => {
-          const columns = line.replace("\ufeff", "").split(";");
-          if (columns.length < 5) return null;
-          return {
-            id: Date.now() + index,
-            data: columns[0],
-            valor: columns[1],
-            resultado: columns[2] === 'GREEN' ? 'V' : 'R',
-            lucro: columns[3],
-            bancaResultante: parseFloat(columns[4]),
-            status: columns[5]
-          };
-        }).filter(item => item !== null);
-        if (importedHistory.length > 0) {
-          setHistorico(importedHistory);
-          setBancaAtual(importedHistory[0].bancaResultante);
-          setCicloStep(1);
-          setLucroAcumuladoCiclo(0);
-          setView('desempenho');
+                <div id="admin-menu-view" class="hidden flex-1 overflow-y-auto custom-scrollbar p-1 pb-20">
+                    <button onclick="window.openMenuEditModal()" class="w-full mb-4 bg-green-600 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2">Adicionar Novo Item</button>
+                    <div id="admin-menu-list" class="space-y-3"></div>
+                    <div class="mt-4 pt-4 border-t border-gray-800">
+                         <button onclick="window.generateSlogan()" class="w-full mb-3 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg flex justify-center items-center gap-2 text-sm"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"></path></svg> Criar Slogan IA</button>
+                    </div>
+                </div>
+
+                <!-- NOVA TELA DE ANÁLISE -->
+                <div id="admin-analysis-view" class="hidden flex-1 overflow-y-auto custom-scrollbar p-1 pb-20">
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">Importar CSV para Análise</label>
+                        <div class="flex gap-2">
+                             <input type="file" id="csv-upload" accept=".csv" class="block w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700"/>
+                             <button onclick="window.handleCsvUpload()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-full">Carregar</button>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-1">*Selecione um arquivo .csv exportado anteriormente para ver os gráficos.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                            <h4 class="text-orange-500 font-bold text-xs uppercase mb-3">Produtos Mais Vendidos (Qtd)</h4>
+                            <canvas id="productsChart"></canvas>
+                        </div>
+                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                            <h4 class="text-green-500 font-bold text-xs uppercase mb-3">Faturamento Estimado por Produto</h4>
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!-- FIM TELA ANÁLISE -->
+
+            </div>
+        </div>
+    </main>
+
+    <nav class="fixed bottom-0 w-full bg-black border-t border-gray-900 safe-bottom z-50">
+        <div class="flex justify-around items-center h-16 max-w-4xl mx-auto">
+            <button onclick="window.switchTab('menu')" id="nav-menu" class="nav-btn flex flex-col items-center text-orange-500"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"></path></svg><span class="text-xs font-bold">Menu</span></button>
+            <button onclick="window.switchTab('cart')" id="nav-cart" class="nav-btn flex flex-col items-center text-gray-500 relative"><div class="relative"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path><circle cx="10.5" cy="19.5" r="1.5"></circle><circle cx="17.5" cy="19.5" r="1.5"></circle></svg><span id="nav-cart-badge" class="absolute -top-1 -right-2 bg-orange-600 text-white text-[10px] font-bold px-1 rounded-full hidden font-sans">0</span></div><span class="text-xs font-bold">Carrinho</span></button>
+        </div>
+    </nav>
+
+    <div id="modal-item" class="fixed inset-0 bg-black/90 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-900 rounded-xl max-w-md w-full p-5 relative border border-gray-800 shadow-2xl">
+            <button onclick="window.closeModal()" class="absolute top-3 right-3 text-gray-500 text-xl hover:text-white transition">&times;</button>
+            <h3 id="modal-title" class="text-2xl font-bold text-white mb-1">Nome</h3>
+            <p id="modal-desc" class="text-gray-400 text-sm mb-4 font-sans">Desc</p>
+            <p id="modal-price" class="text-orange-500 font-bold text-2xl mb-4">R$ 0,00</p>
+            <textarea id="modal-obs" class="w-full bg-black border border-gray-700 rounded p-2 text-white text-sm mb-4" rows="2" placeholder="Observações..."></textarea>
+            <div class="flex items-center justify-between mt-6">
+                <div class="flex items-center bg-black rounded-lg p-1 border border-gray-800"><button onclick="window.changeModalQty(-1)" class="w-10 h-10 text-white font-bold">-</button><span id="modal-qty" class="w-12 text-center text-white text-lg">1</span><button onclick="window.changeModalQty(1)" class="w-10 h-10 text-white font-bold">+</button></div>
+                <button id="btn-add-to-cart" onclick="window.confirmAddToCart()" class="bg-orange-600 text-white font-bold py-3 px-6 rounded-lg ml-4 flex-1">ADICIONAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-history" class="fixed inset-0 bg-black/95 z-[90] hidden flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-gray-900 rounded-xl max-w-lg w-full p-6 relative border border-gray-700 shadow-2xl h-[80vh] flex flex-col">
+            <button onclick="window.closeHistoryModal()" class="absolute top-3 right-3 text-gray-500 text-xl hover:text-white transition">&times;</button>
+            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><svg class="icon" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg> Histórico Diário</h3>
+            <div class="flex-1 overflow-y-auto custom-scrollbar border border-gray-800 rounded-lg">
+                <table class="w-full history-table text-left">
+                    <thead class="bg-black text-xs uppercase sticky top-0">
+                        <tr>
+                            <th class="pl-2">Data</th>
+                            <th class="text-center" title="Quantidade de Pedidos">Peds</th>
+                            <th class="text-center text-orange-500" title="Unidades de Produtos">Prods</th>
+                            <th class="text-right pr-2">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="daily-history-body" class="text-gray-300"></tbody>
+                </table>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-800 flex gap-3">
+                <button onclick="window.exportHistorySummary()" class="flex-1 bg-blue-900/50 hover:bg-blue-800 text-blue-200 border border-blue-800 py-2 rounded font-bold text-xs">Exportar Resumo</button>
+                <button onclick="window.closeHistoryModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 py-2 rounded font-bold text-xs">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-menu-edit" class="fixed inset-0 bg-black/95 z-[80] hidden flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-gray-900 rounded-xl max-w-md w-full p-6 relative border border-gray-700 shadow-2xl">
+            <button onclick="window.closeMenuEditModal()" class="absolute top-3 right-3 text-gray-500 text-xl">&times;</button>
+            <h3 id="menu-edit-title" class="text-xl font-bold text-white mb-4">Editar</h3>
+            <select id="edit-cat" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-3"><option value="BURGER REGRETS">Burgers</option><option value="ACOMPANHAMENTOS">Acompanhamentos</option><option value="BEBIDAS">Bebidas</option></select>
+            <input type="text" id="edit-name" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-3" placeholder="Nome">
+            <button onclick="window.generateAIDescription()" class="text-xs bg-orange-600 text-white px-2 py-0.5 rounded mb-1">✨ Gerar Descrição</button>
+            <textarea id="edit-desc" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-3" rows="3"></textarea>
+            <input type="number" id="edit-price" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-6" placeholder="Preço">
+            <div class="flex gap-3"><button onclick="window.saveMenuItem()" class="flex-1 bg-orange-600 text-white font-bold py-3 rounded-lg">Salvar</button></div>
+            <input type="hidden" id="edit-original-cat"><input type="hidden" id="edit-index">
+        </div>
+    </div>
+
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl z-[70] hidden flex items-center transition-all duration-300 opacity-0 translate-y-[-20px] font-sans font-bold border border-orange-500">
+        <span id="toast-msg">Item adicionado!</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global State attached to Window
+        window.db = null; window.auth = null; window.appId = null; window.userId = null;
+        
+        window.serverUrl = localStorage.getItem('del8ServerUrl') || "";
+        window.cart = [];
+        window.localOrders = JSON.parse(localStorage.getItem('del8LocalOrders')) || [];
+        window.archivedOrders = JSON.parse(localStorage.getItem('del8ArchivedOrders')) || [];
+        window.currentModalItem = null;
+        window.modalQtyVal = 1;
+
+        const DEFAULT_MENU = {
+            "BURGER REGRETS": [
+                { id: "BR1", nome: `Simple <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "O clássico infalível: Pão, carne e queijo", preco: 18.00 },
+                { id: "BR2", nome: `Pikle <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Com picles artesanais e molho da casa", preco: 22.00 },
+                { id: "BR3", nome: `Onion <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Cebola caramelizada e cebola crispy", preco: 25.00 },
+                { id: "BR4", nome: `Bacon <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Bacon crocante e molho de bacon", preco: 28.00 },
+                { id: "BR5", nome: `Melt <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Muito queijo cheddar derretido", preco: 30.00 },
+                { id: "BR6", nome: `Rings <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Com anéis de cebola (Onion Rings) dentro", preco: 27.00 },
+                { id: "BR7", nome: `Solemar <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Carne de sol, queijo coalho e manteiga", preco: 33.00 },
+                { id: "BR8", nome: `Monster <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Monstruoso: Carne dupla, bacon e cheddar", preco: 38.00 },
+            ],
+            "ACOMPANHAMENTOS": [{ id: "AC1", nome: "Fries Clássica", desc: "Porção de batata frita clássica", preco: 10.00 },{ id: "AC2", nome: "Fries Turbinada", desc: "Porção de batata frita coberta de bacon", preco: 15.00 },{ id: "AC3", nome: "Onion Rings", desc: "Porção de anéis de cebola empanados", preco: 20.00 },{ id: "AC4", nome: "Onion Rings 2.0", desc: "Anéis de cebola cobertos com coração de carne de sol", preco: 28.00 },],
+            "BEBIDAS": [{ id: "BB1", nome: "Refrigerante Lata", desc: "350ml - Consultar sabores", preco: 6.00 },{ id: "BB2", nome: "Refrigerante 1L", desc: "1 Litro - Consultar sabores", preco: 10.00 },]
+        };
+
+        window.menuData = JSON.parse(localStorage.getItem('del8MenuData')) || DEFAULT_MENU;
+
+        // --- CHART & ANALYSIS LOGIC ---
+        let charts = { products: null, revenue: null };
+
+        window.handleCsvUpload = function() {
+            const input = document.getElementById('csv-upload');
+            if(!input.files || input.files.length === 0) return alert("Selecione um arquivo CSV.");
+            
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const rows = text.trim().split('\n');
+                const parsedOrders = [];
+                for(let i=1; i<rows.length; i++) {
+                    const cols = rows[i].split(','); 
+                    const itemMatch = rows[i].match(/"([^"]*)"/);
+                    let itemsStr = "";
+                    let remaining = rows[i];
+                    if(itemMatch) {
+                        itemsStr = itemMatch[1];
+                        remaining = rows[i].replace(`"${itemsStr}"`, "ITEMS_PLACEHOLDER");
+                    }
+                    const simpleCols = remaining.split(',');
+                    const itemsFinal = itemsStr || simpleCols[4]; 
+                    const totalVal = parseFloat(simpleCols[5]);
+                    if(!isNaN(totalVal)) {
+                        parsedOrders.push({
+                            items: itemsFinal,
+                            total: totalVal
+                        });
+                    }
+                }
+                window.renderAnalysis(parsedOrders);
+                alert(`Dados carregados: ${parsedOrders.length} pedidos importados.`);
+            };
+            reader.readAsText(file);
         }
-      } catch (err) { console.error("Erro ao importar CSV:", err); }
-    };
-    reader.readAsText(file);
-    event.target.value = null;
-  };
 
-  // --- LÓGICA DE RESET ---
-  const handleReset = () => {
-    setBancaAtual(config.bancaInicial);
-    setHistorico([]);
-    setCicloStep(1);
-    setLucroAcumuladoCiclo(0);
-    setShowResetConfirm(false);
-  };
+        window.renderAnalysis = function(ordersSource) {
+            const orders = ordersSource || [...window.archivedOrders, ...window.localOrders];
+            if(orders.length === 0) return;
+            const productCounts = {};
+            const productRevenue = {};
+            orders.forEach(o => {
+                if(!o.items) return;
+                const parts = o.items.split(', ');
+                parts.forEach(p => {
+                    const match = p.match(/^(\d+)x\s+(.*)$/);
+                    if(match) {
+                        const qty = parseInt(match[1]);
+                        let name = match[2].replace(/<[^>]*>?/gm, '').trim(); 
+                        if(!productCounts[name]) productCounts[name] = 0;
+                        productCounts[name] += qty;
+                        let price = 0;
+                        Object.values(window.menuData).forEach(cat => {
+                            const found = cat.find(i => i.nome.includes(name) || name.includes(i.nome.replace(/<[^>]*>?/gm, '').trim()));
+                            if(found) price = found.preco;
+                        });
+                        if(!productRevenue[name]) productRevenue[name] = 0;
+                        productRevenue[name] += (qty * price);
+                    }
+                });
+            });
+            const labels = Object.keys(productCounts);
+            const dataQty = Object.values(productCounts);
+            const dataRev = Object.values(productRevenue);
+            if(charts.products) charts.products.destroy();
+            if(charts.revenue) charts.revenue.destroy();
+            const ctx1 = document.getElementById('productsChart').getContext('2d');
+            charts.products = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Qtd Vendida',
+                        data: dataQty,
+                        backgroundColor: 'rgba(249, 115, 22, 0.6)',
+                        borderColor: 'rgba(249, 115, 22, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: 'white' } } },
+                    scales: {
+                        y: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+                        x: { ticks: { color: '#9ca3af' }, grid: { display: false } }
+                    }
+                }
+            });
+            const ctx2 = document.getElementById('revenueChart').getContext('2d');
+            charts.revenue = new Chart(ctx2, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataRev,
+                        backgroundColor: ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ef4444', '#eab308', '#14b8a6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { color: 'white', font: { size: 10 } } } }
+                }
+            });
+        }
 
-  // --- LÓGICA DE ATUALIZAÇÃO DE CICLO ---
-  const processarEntrada = (resultado) => {
-    const valorAtual = valorEntradaAtual || 0;
-    const lucroDestaEntrada = valorAtual * 0.9; 
-    if (resultado === 'V') {
-      const novoLucroAcumulado = lucroAcumuladoCiclo + lucroDestaEntrada;
-      if (cicloStep < 3) {
-        setLucroAcumuladoCiclo(novoLucroAcumulado);
-        setCicloStep(cicloStep + 1);
-        setHistorico([{
-          id: Date.now(),
-          data: new Date().toLocaleTimeString(),
-          valor: valorAtual.toFixed(2),
-          resultado: 'V',
-          bancaResultante: Number(bancaAtual.toFixed(2)),
-          lucro: `+${lucroDestaEntrada.toFixed(2)} (Em Ciclo)`,
-          status: `Passo ${cicloStep} OK`
-        }, ...historico]);
-      } else {
-        const lucroFinalCiclo = novoLucroAcumulado;
-        const novaBanca = bancaAtual + lucroFinalCiclo;
-        setBancaAtual(novaBanca);
-        setLucroAcumuladoCiclo(0);
-        setCicloStep(1);
-        setHistorico([{
-          id: Date.now(),
-          data: new Date().toLocaleTimeString(),
-          valor: valorAtual.toFixed(2),
-          resultado: 'V',
-          bancaResultante: Number(novaBanca.toFixed(2)),
-          lucro: `+${lucroFinalCiclo.toFixed(2)} (CICLO COMPLETO)`,
-          status: "Ciclo Finalizado"
-        }, ...historico]);
-      }
-    } else {
-      const novaBanca = bancaAtual - valorAtual;
-      setBancaAtual(novaBanca);
-      setLucroAcumuladoCiclo(0);
-      setCicloStep(1);
-      setHistorico([{
-        id: Date.now(),
-        data: new Date().toLocaleTimeString(),
-        valor: valorAtual.toFixed(2),
-        resultado: 'R',
-        bancaResultante: Number(novaBanca.toFixed(2)),
-        lucro: `-${valorAtual.toFixed(2)}`,
-        status: "Ciclo Interrompido"
-      }, ...historico]);
-    }
-  };
+        // --- STANDARD UI ---
+        window.renderMenu = function(f) {
+            const g = document.getElementById('menu-grid'); if(!g)return; g.innerHTML='';
+            let items = [];
+            if(f==='all') Object.values(window.menuData).forEach(x => items.push(...x)); else items = window.menuData[f]||[];
+            items.forEach(i => {
+                g.innerHTML += `<div class="card-gradient rounded-xl p-4 shadow-lg flex flex-col justify-between"><div><div class="flex justify-between items-start"><h3 class="font-bold text-lg text-white leading-tight">${i.nome}</h3><span class="text-xs font-mono text-gray-500 bg-black px-1 rounded border border-gray-800 font-bold">${i.id}</span></div><p class="text-gray-400 text-sm mt-2 line-clamp-2 font-sans">${i.desc}</p></div><div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-800"><button onclick="window.openItemModal('${i.id}')" class="bg-orange-600 hover:bg-orange-500 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg active:scale-95 transition-all"><svg class="icon text-xs" viewBox="0 0 24 24"><path d="M11 9h2V6h3V4h-3V1h-2v3H8v2h3v3zm-4 9c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2zm-9.83-3.25.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.86-7.01L19.42 4h-.01l-1.1 2-2.76 5H8.53l-.13-.27L6.16 6l-.95-2-.94-2H1v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.13 0-.25-.11-.25-.25z"></path></svg></button><span class="text-orange-500 font-bold text-xl price-tag">R$ ${parseFloat(i.preco).toFixed(2)}</span></div></div>`;
+            });
+        }
+        window.updateCartUI = function() {
+            const c = document.getElementById('cart-items-container'), f = document.getElementById('cart-footer');
+            if(!c) return;
+            if(window.cart.length===0) { c.innerHTML='<div class="text-center text-gray-500 py-10">Carrinho vazio</div>'; f.classList.add('hidden'); document.getElementById('btn-analyze-cart').classList.add('hidden'); document.getElementById('btn-diet-excuse').classList.add('hidden'); }
+            else { 
+                document.getElementById('btn-analyze-cart').classList.remove('hidden'); document.getElementById('btn-diet-excuse').classList.remove('hidden');
+                f.classList.remove('hidden'); c.innerHTML=''; let t=0; 
+                window.cart.forEach((i,x)=>{ t+=i.preco*i.qty; c.innerHTML+=`<div class="bg-gray-900 rounded p-2 flex justify-between items-center mb-2"><div class="text-sm text-white"><span class="text-orange-500 font-bold">${i.qty}x</span> ${i.nome}</div><button onclick="window.removeFromCart(${x})" class="text-red-500">✕</button></div>`; }); 
+                document.getElementById('cart-subtotal').innerText=`R$ ${t.toFixed(2)}`; document.getElementById('cart-total').innerText=`R$ ${t.toFixed(2)}`; 
+            }
+            const q = window.cart.reduce((a,b)=>a+b.qty,0); document.querySelectorAll('#header-cart-count, #nav-cart-badge').forEach(e=>{e.innerText=q; e.classList.toggle('hidden',q===0)});
+        }
+        window.openItemModal = function(id) {
+            let item = null;
+            for(const cat in window.menuData) { item = window.menuData[cat].find(x => x.id === id); if(item) break; }
+            if(!item) return;
+            window.currentModalItem = item; window.modalQtyVal = 1;
+            document.getElementById('modal-title').innerHTML = item.nome;
+            document.getElementById('modal-desc').innerText = item.desc;
+            document.getElementById('modal-price').innerText = `R$ ${parseFloat(item.preco).toFixed(2)}`;
+            document.getElementById('modal-qty').innerText = 1;
+            document.getElementById('modal-obs').value = '';
+            document.getElementById('modal-item').classList.remove('hidden');
+        }
+        window.closeModal = function() { document.getElementById('modal-item').classList.add('hidden'); }
+        window.changeModalQty = function(d) { window.modalQtyVal+=d; if(window.modalQtyVal<1)window.modalQtyVal=1; document.getElementById('modal-qty').innerText=window.modalQtyVal; document.getElementById('modal-price').innerText=`R$ ${(window.currentModalItem.preco*window.modalQtyVal).toFixed(2)}`; }
+        window.confirmAddToCart = function() {
+            const btn = document.getElementById('btn-add-to-cart');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = 'ADICIONADO!'; btn.classList.add('bg-green-600');
+            const obs = document.getElementById('modal-obs').value;
+            setTimeout(() => {
+                window.cart.push({...window.currentModalItem, qty: window.modalQtyVal, obs, uniqueId: Date.now()});
+                window.updateCartUI(); window.closeModal();
+                btn.innerHTML = originalContent; btn.classList.remove('bg-green-600');
+                window.showToast(`+ ${window.modalQtyVal}x Item`);
+            }, 500);
+        }
+        window.removeFromCart = function(i) { window.cart.splice(i,1); window.updateCartUI(); }
+        window.filterCategory = function(c) { document.querySelectorAll('.cat-btn').forEach(b => { const m = (c==='all'&&b.innerText==='Todos')||(c!=='all'&&b.innerText.includes(c.split(' ')[0])); b.classList.toggle('bg-orange-600',m); b.classList.toggle('text-white',m); b.classList.toggle('bg-black',!m); }); window.renderMenu(c); }
+        window.switchTab = function(t) { ['menu','cart','admin'].forEach(v=>document.getElementById(`view-${v}`).classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); const nm = document.getElementById('nav-menu'); const nc = document.getElementById('nav-cart'); if(nm) nm.classList.toggle('text-orange-500', t==='menu'); if(nc) nc.classList.toggle('text-orange-500', t==='cart'); window.scrollTo(0,0); if(t==='admin' && localStorage.getItem('isAdminLoggedIn')==='true'){document.getElementById('admin-login').classList.add('hidden');document.getElementById('admin-content-wrapper').classList.remove('hidden');window.updateAdminStats();} }
 
-  const Card = ({ title, value, icon: Icon, color, subValue }) => (
-    <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-lg">
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="text-slate-400 text-sm font-medium mb-1 uppercase tracking-wider">{title}</p>
-          <h3 className="text-2xl font-bold text-white">{value}</h3>
-          {subValue && <p className="text-xs mt-1 text-slate-500">{subValue}</p>}
-        </div>
-        <div className={`p-3 rounded-lg ${color} bg-opacity-10`}>
-          <Icon size={20} className={color.replace('bg-', 'text-')} />
-        </div>
-      </div>
-    </div>
-  );
+        // DB & Admin
+        window.saveServerConfig = function() {
+            const input = document.getElementById('server-url-input');
+            window.serverUrl = input.value.trim();
+            if(window.serverUrl.endsWith('/')) window.serverUrl = window.serverUrl.slice(0, -1);
+            localStorage.setItem('del8ServerUrl', window.serverUrl);
+            window.updateConnectionStatus();
+            window.initData();
+            alert("Configuração salva!");
+        }
+        window.updateConnectionStatus = function() {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            const display = document.getElementById('current-server-display');
+            if(window.serverUrl) { dot.classList.replace('status-offline','status-online'); text.innerText = "SERVER"; display.innerText = window.serverUrl; } 
+            else { dot.classList.replace('status-online','status-offline'); text.innerText = "LOCAL"; display.innerText = "Local (Offline)"; }
+        }
+        window.initData = async function() {
+            if(window.serverUrl) {
+                try {
+                    const res = await fetch(`${window.serverUrl}/api/menu`);
+                    if(res.ok) {
+                        const data = await res.json();
+                        if(Object.keys(data).length > 0) { window.menuData = data; window.renderMenu('all'); }
+                    }
+                } catch(e) {}
+            }
+            const loader = document.getElementById('loading-overlay');
+            if(loader) { loader.classList.add('opacity-0'); setTimeout(() => loader.classList.add('hidden'), 500); }
+        }
+        window.sendOrder = async function(order) {
+            if(window.serverUrl) {
+                try {
+                    const res = await fetch(`${window.serverUrl}/api/orders`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(order) });
+                    if(!res.ok) throw new Error("Falha");
+                    return true;
+                } catch(e) {
+                    alert("Erro online. Salvo localmente.");
+                    window.localOrders.push(order); localStorage.setItem('del8LocalOrders', JSON.stringify(window.localOrders));
+                    return false;
+                }
+            } else {
+                window.localOrders.push(order); localStorage.setItem('del8LocalOrders', JSON.stringify(window.localOrders));
+                return true;
+            }
+        }
+        window.fetchOrders = async function() {
+            if(window.serverUrl) {
+                try { const res = await fetch(`${window.serverUrl}/api/orders`); if(res.ok) return await res.json(); } catch(e) {}
+            }
+            return window.localOrders;
+        }
+        window.clearRemoteOrders = async function() {
+            if(window.serverUrl) { try { await fetch(`${window.serverUrl}/api/orders/clear`, { method: 'POST' }); } catch(e){} }
+        }
+        window.internalClearOrders = async function() {
+             await window.clearRemoteOrders();
+             window.localOrders = []; 
+             localStorage.setItem('del8LocalOrders', JSON.stringify(window.localOrders));
+             window.updateAdminStats();
+        }
+        window.checkout = async function() {
+            const name = document.getElementById('customer-name').value.trim();
+            if(!name) return alert("Digite seu nome.");
+            if(window.cart.length===0) return alert("Carrinho vazio.");
+            const total = window.cart.reduce((a,b)=>a+(b.preco*b.qty),0);
+            const items = window.cart.map(i => { const d=document.createElement('div'); d.innerHTML=i.nome; return `${i.qty}x ${d.innerText}`; }).join(', ');
+            const order = { id: Date.now().toString().slice(-6), date: new Date().toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), timestamp: Date.now(), customer: name, items, total, status: 'Pendente' };
+            await window.sendOrder(order);
+            window.cart = []; document.getElementById('customer-name').value = ''; window.updateCartUI();
+            alert("Pedido enviado!"); window.switchTab('menu');
+        }
+        window.toggleOrderStatus = function(id) {
+             let order = window.localOrders.find(o => o.id == id);
+             if (order) {
+                 order.status = order.status === 'Pronto' ? 'Pendente' : 'Pronto';
+                 localStorage.setItem('del8LocalOrders', JSON.stringify(window.localOrders));
+                 window.updateAdminStats();
+             }
+        }
+        window.updateAdminStats = async function() {
+            const orders = await window.fetchOrders();
+            const pendingList = document.getElementById('pending-orders-list');
+            const completedList = document.getElementById('completed-orders-list');
+            if(!pendingList) return;
+            pendingList.innerHTML = ''; completedList.innerHTML = '';
 
-  return (
-    <div className="min-h-screen bg-black text-slate-200 font-sans p-4 md:p-8 relative">
-      
-      {/* MODAL DE CONFIRMAÇÃO DE RESET */}
-      {showResetConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-red-500/30 p-8 rounded-2xl max-w-md w-full shadow-[0_0_50px_rgba(239,68,68,0.2)]">
-            <div className="flex items-center gap-4 text-red-500 mb-6">
-              <div className="p-3 bg-red-500/10 rounded-full">
-                <Trash2 size={24} />
-              </div>
-              <h3 className="text-xl font-black uppercase tracking-tighter italic">Confirmar Reset Total?</h3>
-            </div>
-            <p className="text-slate-400 text-sm leading-relaxed mb-8">
-              Esta ação é **irreversível**. Você perderá todo o histórico de operações, métricas de desempenho e o saldo atual será retornado ao valor inicial. Deseja prosseguir?
-            </p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setShowResetConfirm(false)}
-                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-xs uppercase tracking-widest"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleReset}
-                className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl transition-all text-xs uppercase tracking-widest shadow-lg shadow-red-600/20"
-              >
-                Sim, Resetar Tudo
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            const allOrders = [...window.localOrders, ...window.archivedOrders];
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+            const current = new Date();
+            const day = current.getDay(); 
+            const diff = current.getDate() - day; 
+            const startOfWeek = new Date(current.setDate(diff)).getTime();
 
-      {/* INPUT FILE OCULTO */}
-      <input type="file" ref={fileInputRef} onChange={importFromCSV} accept=".csv" className="hidden" />
+            let daily = 0, weekly = 0, monthly = 0, total = 0;
+            window.archivedOrders.forEach(o => {
+                let t = o.timestamp;
+                if(t) {
+                    if (t >= startOfDay) daily += o.total;
+                    if (t >= startOfWeek) weekly += o.total;
+                    if (t >= startOfMonth) monthly += o.total;
+                    total += o.total;
+                }
+            });
 
-      {/* HEADER */}
-      <header className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-white tracking-tighter flex items-center gap-2">
-            <ShieldAlert className="text-blue-500" /> GESTÃO <span className="text-blue-500">PRO</span>
-          </h1>
-          <p className="text-slate-500 text-sm uppercase font-bold tracking-widest">Controle de Desempenho e Ciclos</p>
-        </div>
-        
-        <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800 overflow-x-auto max-w-full">
-          <button onClick={() => setView('dashboard')} className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${view === 'dashboard' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Dashboard</button>
-          <button onClick={() => setView('desempenho')} className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${view === 'desempenho' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Desempenho</button>
-          <button onClick={() => setView('operacoes')} className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${view === 'operacoes' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Operações</button>
-          <button onClick={() => setView('projecoes')} className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${view === 'projecoes' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Ajustes</button>
-        </div>
-      </header>
+            document.getElementById('stat-daily').innerText = `R$ ${daily.toFixed(2)}`;
+            document.getElementById('stat-weekly').innerText = `R$ ${weekly.toFixed(2)}`;
+            document.getElementById('stat-monthly').innerText = `R$ ${monthly.toFixed(2)}`;
+            document.getElementById('stat-revenue').innerText = `R$ ${total.toFixed(2)}`;
+            document.getElementById('stat-orders').innerText = window.localOrders.length;
 
-      <main className="max-w-7xl mx-auto space-y-6">
-        
-        {/* INDICADORES RÁPIDOS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card title="Banca Atual" value={`R$ ${bancaAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} icon={Wallet} color="bg-blue-500" subValue={`Lucro Virtual: R$ ${(lucroAcumuladoCiclo || 0).toFixed(2)}`} />
-          <Card title="Taxa de Acerto" value={`${(stats.taxaAcerto || 0).toFixed(1)}%`} icon={Target} color="bg-emerald-500" subValue={`${stats.wins} Wins / ${stats.losses} Losses`} />
-          <Card title="Eficiência Ciclo" value={`${(stats.eficienciaCiclo || 0).toFixed(1)}%`} icon={Zap} color="bg-yellow-500" subValue={`${stats.ciclosCompletos} Ciclos Finalizados`} />
-          <Card title="ROI Global" value={`${(stats.roi || 0).toFixed(2)}%`} icon={TrendingUp} color={stats.roi >= 0 ? "bg-emerald-500" : "bg-red-500"} subValue={`Total: R$ ${(stats.lucroTotal || 0).toFixed(2)}`} />
-        </div>
+            if(window.localOrders.length === 0) { pendingList.innerHTML = '<p class="text-center text-gray-600 text-xs">Vazio</p>'; return; }
+            window.localOrders.slice().reverse().forEach(o => {
+                const isReady = o.status === 'Pronto';
+                const statusColor = isReady ? 'border-green-900/50 bg-green-900/10' : 'border-orange-500/30 bg-gray-900';
+                const btnIcon = isReady ? '✔' : '⬜';
+                const btnClass = isReady ? 'hover:text-orange-500' : 'bg-green-600 hover:bg-green-500 rounded-full p-1 shadow-lg text-xs';
+                const html = `<div class="p-3 rounded border ${statusColor} text-sm mb-2 draggable" draggable="true" ondragstart="window.drag(event, '${o.id}')" id="order-${o.id}"><div class="flex justify-between mb-1"><span class="font-bold text-white">#${o.id} - ${o.customer}</span><div class="flex items-center gap-2"><span class="text-orange-500 font-bold">R$ ${parseFloat(o.total).toFixed(2)}</span><button onclick="window.toggleOrderStatus('${o.id}')" class="${btnClass}">${btnIcon}</button></div></div><p class="text-gray-400 text-xs">${o.time}</p><p class="text-gray-300 text-xs border-t border-gray-800 pt-2 mt-1">${o.items}</p></div>`;
+                if(isReady) completedList.innerHTML += html; else pendingList.innerHTML += html;
+            });
+        }
+        window.checkAdmin = function(){if(document.getElementById('admin-pass').value==='del8admin'){localStorage.setItem('isAdminLoggedIn','true'); document.getElementById('admin-login').classList.add('hidden'); document.getElementById('admin-content-wrapper').classList.remove('hidden'); window.updateAdminStats();}else document.getElementById('login-error').classList.remove('hidden');}
+        window.logoutAdmin = function(){localStorage.removeItem('isAdminLoggedIn'); document.getElementById('admin-content-wrapper').classList.add('hidden'); document.getElementById('admin-login').classList.remove('hidden');}
+        window.switchAdminView = function(v){
+            // Hide all views
+            document.getElementById('admin-orders-view').classList.add('hidden');
+            document.getElementById('admin-menu-view').classList.add('hidden');
+            document.getElementById('admin-analysis-view').classList.add('hidden');
+            
+            // Reset buttons
+            ['orders', 'menu', 'analysis'].forEach(t => {
+                const btn = document.getElementById(`btn-admin-${t}`);
+                if(btn) btn.className = "flex-1 py-2 text-sm font-bold rounded text-gray-400 hover:text-white transition";
+            });
 
-        {view === 'dashboard' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10"><Zap size={80} className="text-blue-500" /></div>
-              <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
-                <div className="flex items-center gap-2">
-                  <Layers className="text-blue-500" /><h3 className="font-black text-xl text-white uppercase tracking-tighter">Execução de Ciclo</h3>
-                </div>
-                <div className="flex gap-1">
-                  {[1, 2, 3].map(s => (<div key={s} className={`w-8 h-2 rounded-full ${cicloStep >= s ? 'bg-blue-500' : 'bg-slate-800'}`}></div>))}
-                </div>
-              </div>
+            // Show selected
+            document.getElementById(`admin-${v}-view`).classList.remove('hidden');
+            const active = document.getElementById(`btn-admin-${v}`);
+            if(active) active.className = "flex-1 py-2 text-sm font-bold rounded bg-orange-600 text-white transition";
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className={`p-5 rounded-xl border transition-all ${cicloStep === 1 ? 'bg-blue-600/10 border-blue-500 scale-105 shadow-xl' : 'bg-black/20 border-slate-800 opacity-50'}`}>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Passo 1</span>
-                  <div className="text-3xl font-black text-white">R$ {(cicloValues.step1 || 0).toFixed(2)}</div>
-                  <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase">Entrada 1%</p>
-                </div>
-                <div className={`p-5 rounded-xl border transition-all ${cicloStep === 2 ? 'bg-blue-600/10 border-blue-500 scale-105 shadow-xl' : 'bg-black/20 border-slate-800 opacity-50'}`}>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Passo 2</span>
-                  <div className="text-3xl font-black text-white">R$ {(cicloValues.step2 || 0).toFixed(2)}</div>
-                  <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase">Entrada 2%</p>
-                </div>
-                <div className={`p-5 rounded-xl border transition-all ${cicloStep === 3 ? 'bg-blue-600/10 border-blue-500 scale-105 shadow-xl' : 'bg-black/20 border-slate-800 opacity-50'}`}>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Passo 3</span>
-                  <div className="text-3xl font-black text-white">R$ {(cicloValues.step3 || 0).toFixed(2)}</div>
-                  <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase">Entrada 4%</p>
-                </div>
-              </div>
+            if(v==='orders') window.updateAdminStats(); 
+            else if (v==='menu') window.renderAdminMenu();
+            else if (v==='analysis') window.renderAnalysis();
+        }
+        window.openMenuEditModal = function(c,i){document.getElementById('modal-menu-edit').classList.remove('hidden'); if(c){const it=window.menuData[c][i]; document.getElementById('edit-cat').value=c; document.getElementById('edit-name').value=it.nome; document.getElementById('edit-desc').value=it.desc; document.getElementById('edit-price').value=it.preco; document.getElementById('edit-original-cat').value=c; document.getElementById('edit-index').value=i;}else{document.getElementById('edit-index').value=''; document.getElementById('edit-name').value=''; document.getElementById('edit-desc').value=''; document.getElementById('edit-price').value='';}}
+        window.closeMenuEditModal = function(){document.getElementById('modal-menu-edit').classList.add('hidden');}
+        window.saveMenuItem = async function() {
+            const cat=document.getElementById('edit-cat').value, name=document.getElementById('edit-name').value, desc=document.getElementById('edit-desc').value, price=parseFloat(document.getElementById('edit-price').value);
+            const oCat=document.getElementById('edit-original-cat').value, idx=document.getElementById('edit-index').value;
+            if(!name||!desc||isNaN(price)) return alert("Preencha tudo");
+            let item = { id: idx!==''?window.menuData[oCat][idx].id : (cat.substr(0,2)+(window.menuData[cat]?window.menuData[cat].length+1:1)+Math.random().toString(36).substr(2,2).toUpperCase()), nome:name, desc, preco:price };
+            if(idx!=='') { if(cat===oCat) window.menuData[cat][idx]=item; else { window.menuData[oCat].splice(idx,1); (window.menuData[cat]||(window.menuData[cat]=[])).push(item); } } 
+            else { (window.menuData[cat]||(window.menuData[cat]=[])).push(item); }
+            localStorage.setItem('del8MenuData', JSON.stringify(window.menuData));
+            await window.syncMenu(window.menuData);
+            window.renderAdminMenu(); window.renderMenu('all'); window.closeMenuEditModal();
+        }
+        window.deleteMenuItem = function(c,i) { if(confirm("Apagar?")) { window.menuData[c].splice(i,1); localStorage.setItem('del8MenuData', JSON.stringify(window.menuData)); window.renderAdminMenu(); window.renderMenu('all'); } }
+        window.closeRegister = function() {
+            let currentTotal = 0;
+            window.localOrders.forEach(o => currentTotal += o.total);
+            const dailyValue = `R$ ${currentTotal.toFixed(2)}`;
+            if(confirm(`FECHAR CAIXA DO DIA?\n\nFaturamento do Turno: ${dailyValue}\n\nDeseja zerar a lista de pedidos para amanhã?`)) {
+                window.archivedOrders = [...window.archivedOrders, ...window.localOrders];
+                localStorage.setItem('del8ArchivedOrders', JSON.stringify(window.archivedOrders));
+                window.internalClearOrders();
+            }
+        }
+        window.openHistoryModal = function() {
+            const modal = document.getElementById('modal-history');
+            const tbody = document.getElementById('daily-history-body');
+            modal.classList.remove('hidden');
+            tbody.innerHTML = '';
+            const all = [...window.archivedOrders, ...window.localOrders];
+            if(all.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-4">Sem dados.</td></tr>'; return; }
+            
+            const groups = {};
+            all.forEach(o => {
+                const d = o.date;
+                if(!groups[d]) groups[d] = { count: 0, total: 0, items: 0 };
+                groups[d].count++;
+                groups[d].total += o.total;
+                if(o.items) {
+                    const parts = o.items.split(', ');
+                    parts.forEach(p => {
+                        const match = p.match(/^(\d+)x/);
+                        if(match && match[1]) {
+                            groups[d].items += parseInt(match[1]);
+                        }
+                    });
+                }
+            });
+            Object.keys(groups).sort((a,b) => {
+                const da = a.split('/').reverse().join('');
+                const db = b.split('/').reverse().join('');
+                return db.localeCompare(da);
+            }).forEach(date => {
+                tbody.innerHTML += `<tr><td class="pl-2">${date}</td><td class="text-center text-gray-400">${groups[date].count}</td><td class="text-center font-bold text-orange-400">${groups[date].items}</td><td class="text-right font-bold text-green-500 pr-2">R$ ${groups[date].total.toFixed(2)}</td></tr>`;
+            });
+        }
+        window.closeHistoryModal = function() { document.getElementById('modal-history').classList.add('hidden'); }
+        window.exportHistorySummary = function() {
+            const all = [...window.archivedOrders, ...window.localOrders];
+            if(all.length===0) return alert("Sem dados.");
+            const groups = {};
+            all.forEach(o => {
+                const d = o.date;
+                if(!groups[d]) groups[d] = { count: 0, total: 0, items: 0 };
+                groups[d].count++;
+                groups[d].total += o.total;
+                if(o.items) {
+                    const parts = o.items.split(', ');
+                    parts.forEach(p => {
+                        const match = p.match(/^(\d+)x/);
+                        if(match && match[1]) {
+                            groups[d].items += parseInt(match[1]);
+                        }
+                    });
+                }
+            });
+            let csv = "Data,Qtd Pedidos,Qtd Produtos,Total Faturado\n";
+            Object.keys(groups).sort((a,b) => b.localeCompare(a)).forEach(d => {
+                csv += `${d},${groups[d].count},${groups[d].items},${groups[d].total.toFixed(2)}\n`;
+            });
+            const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8,"+csv); link.download = "resumo_producao_diario.csv"; link.click();
+        }
+        window.exportToCSV = function() {
+            const all = [...window.archivedOrders, ...window.localOrders];
+            if(!all || all.length===0) return alert("Sem dados");
+            let csv = "ID,Data,Hora,Cliente,Itens,Total,Status\n" + all.map(o => `${o.id},${o.date},${o.time},${o.customer},"${o.items}",${o.total},${o.status}`).join("\n");
+            const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8,"+csv); link.download = "historico_completo.csv"; link.click();
+        }
+        window.showToast = function(m){const t=document.getElementById('toast'); document.getElementById('toast-msg').innerText=m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),2000);}
+        window.deleteSelected = function(){if(!confirm('Apagar selecionados?'))return; const ids=Array.from(document.querySelectorAll('.order-checkbox:checked')).map(c=>parseInt(c.value)); if(window.serverUrl) { } else { window.localOrders=window.localOrders.filter(o=>!ids.includes(o.id)); localStorage.setItem('del8LocalOrders',JSON.stringify(window.localOrders)); window.updateAdminStats(); } }
+        window.toggleSelection = function(){const btn=document.getElementById('btn-delete-selected'); if(!btn)return; const c=document.querySelectorAll('.order-checkbox:checked').length; btn.classList.toggle('hidden', c===0); if(c>0){const counter=document.getElementById('delete-count'); if(counter)counter.innerText=c;}}
+        window.clearAllHistoryManual = function() { if(confirm("Deseja mesmo limpar todo o histórico atual?")) { window.internalClearOrders(); } }
+        window.renderAdminMenu = function() {
+            const l = document.getElementById('admin-menu-list'); if(!l)return; l.innerHTML='';
+            Object.entries(window.menuData).forEach(([cat, items]) => {
+                l.innerHTML += `<div class="text-orange-500 font-bold text-xs uppercase mt-4 border-b border-gray-800">${cat}</div>`;
+                items.forEach((i, idx) => {
+                    const tmp = document.createElement("div"); tmp.innerHTML=i.nome;
+                    l.innerHTML += `<div class="bg-gray-900 p-3 rounded border border-gray-800 flex justify-between items-center mt-2"><div class="flex-1"><span class="text-xs bg-black text-gray-500 px-1">${i.id}</span> <span class="font-bold text-white text-sm">${tmp.innerText}</span><p class="text-xs text-gray-500 truncate">${i.desc}</p></div><div class="flex gap-2"><button onclick="window.openMenuEditModal('${cat}',${idx})" class="text-blue-400">✎</button><button onclick="window.deleteMenuItem('${cat}',${idx})" class="text-red-400">🗑</button></div></div>`;
+                });
+            });
+        }
+        window.closeCartAi = function() { document.getElementById('cart-ai-response').classList.add('hidden'); }
+        window.analyzeCart = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-analyze-cart'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await callGemini("Analise", `Garçom sarcástico DEL 8. Pedido: ${window.cart.map(i=>i.nome).join(', ')}. Comente curto.`); document.getElementById('cart-ai-text').innerText=r; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
+        window.generateDietExcuse = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-diet-excuse'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await callGemini("Desculpa", `Advogado engraçado. Cliente comeu: ${window.cart.map(i=>i.nome).join(', ')}. Desculpa p/ nutricionista. Curta.`); document.getElementById('cart-ai-text').innerText=`🤥 "${r}"`; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
+        window.generateSlogan = async function(){const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await callGemini("Slogan", "Slogan curto/moderno/neon DEL 8."); alert(`📢 "${r.replace(/["']/g,"")}"`); b.innerText=h; b.disabled=false;}
+        window.generateAIDescription = async function(){const n=document.getElementById('edit-name').value; if(!n)return alert('Nome?'); const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await callGemini("Descrição", `Mkt DEL 8. Descrição curta para: ${n}`); document.getElementById('edit-desc').value=r.replace(/["']/g,""); b.innerText=h; b.disabled=false;}
+        window.askChefAI = async function() {
+            const userInput = document.getElementById('ai-chef-input').value.trim();
+            if (!userInput) return;
+            const btn = document.getElementById('btn-ask-chef');
+            const resultDiv = document.getElementById('ai-chef-result');
+            btn.disabled = true; btn.innerHTML = '<svg class="icon animate-spin" viewBox="0 0 24 24"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"></path></svg> Pensando...';
+            const menuContext = JSON.stringify(window.menuData); 
+            const systemPrompt = `Você é a "Chef IA" da hamburgueria "DEL 8". O menu: ${menuContext}. Sugira 1-2 itens com base em: "${userInput}". Curto e divertido.`;
+            const response = await callGemini(userInput, systemPrompt);
+            resultDiv.innerHTML = marked.parse(response); resultDiv.classList.remove('hidden');
+            btn.disabled = false; btn.innerHTML = '<span>PEDIR OUTRA SUGESTÃO</span>';
+        }
+        window.openAiChefModal = function(){ document.getElementById('modal-ai-chef').classList.remove('hidden'); document.getElementById('ai-chef-result').classList.add('hidden'); document.getElementById('ai-chef-input').value=''; }
+        window.closeAiChefModal = function(){ document.getElementById('modal-ai-chef').classList.add('hidden'); }
 
-              <div className="flex flex-col md:flex-row gap-4">
-                 <button onClick={() => processarEntrada('V')} className="flex-1 py-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl transition-all flex flex-col items-center justify-center gap-1 uppercase group shadow-lg">
-                   <CheckCircle2 size={24} /><span className="text-xs">Registrar Vitória</span>
-                   <span className="text-[10px] opacity-70">Stake: R$ {(valorEntradaAtual || 0).toFixed(2)}</span>
-                 </button>
-                 <button onClick={() => processarEntrada('R')} className="flex-1 py-6 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl transition-all flex flex-col items-center justify-center gap-1 uppercase group shadow-lg">
-                   <XCircle size={24} /><span className="text-xs">Registrar Derrota</span>
-                   <span className="text-[10px] opacity-70">Resetar Ciclo</span>
-                 </button>
-              </div>
-            </div>
+        window.drag = function(ev, id) { ev.dataTransfer.setData("text/plain", id); ev.target.classList.add('dragging'); }
+        window.allowDrop = function(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
+        window.leaveDrop = function(ev) { ev.currentTarget.classList.remove('drag-over'); }
+        window.drop = function(ev, status) {
+            ev.preventDefault(); ev.currentTarget.classList.remove('drag-over');
+            const id = ev.dataTransfer.getData("text/plain");
+            const el = document.getElementById(`order-${id}`);
+            if(el) el.classList.remove('dragging');
+            window.toggleOrderStatus(id);
+        }
 
-            <div className="lg:col-span-4 space-y-4">
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-                <h3 className="font-black text-xs mb-4 uppercase tracking-widest flex items-center gap-2 text-blue-500"><Info size={16} /> Protocolo</h3>
-                <div className="space-y-4 text-[11px] text-slate-400">
-                   <p><span className="text-emerald-500 font-bold">Vitória P1/P2:</span> Banca estável, lucro acumulado.</p>
-                   <p><span className="text-emerald-500 font-bold">Vitória P3:</span> Ciclo encerrado, lucro em banca.</p>
-                   <p><span className="text-red-500 font-bold">Qualquer Red:</span> Subtração imediata e reset.</p>
-                </div>
-              </div>
-              <div className="bg-blue-600/10 border border-blue-500/30 p-5 rounded-xl">
-                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block mb-2">Lucro Ciclo Completo</span>
-                <div className="text-2xl font-black text-white">R$ {(apostaBase * 7 || 0).toFixed(2)}</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {view === 'desempenho' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl flex flex-col items-center justify-center">
-                <h3 className="font-black text-sm uppercase tracking-widest mb-6 self-start flex items-center gap-2"><PieChartIcon size={16} className="text-blue-500" /> Mix de Resultados</h3>
-                <div className="h-48 w-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={stats.pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">{stats.pieData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}</Pie><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}/></PieChart></ResponsiveContainer></div>
-                <div className="flex gap-6 mt-4"><div className="flex items-center gap-2"><div className="w-3 h-3 bg-emerald-500 rounded-full"></div> <span className="text-xs">Wins</span></div><div className="flex items-center gap-2"><div className="w-3 h-3 bg-red-500 rounded-full"></div> <span className="text-xs">Losses</span></div></div>
-              </div>
-              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-xl">
-                <h3 className="font-black text-sm uppercase tracking-widest mb-6 flex items-center gap-2 text-white"><Activity size={16} className="text-blue-500" /> Saúde do Sistema</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Profit Factor</span><div className="text-2xl font-black text-white">{stats.profitFactor}</div></div>
-                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Total Ciclos</span><div className="text-2xl font-black text-white">{stats.ciclosIniciados}</div></div>
-                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Total Entradas</span><div className="text-2xl font-black text-white">{stats.totalEntradas}</div></div>
-                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Meta Batida</span><div className="text-2xl font-black text-white">{(stats.roi || 0).toFixed(1)}%</div></div>
-                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Média Stake</span><div className="text-2xl font-black text-white">R$ {(apostaBase || 0).toFixed(2)}</div></div>
-                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Status Final</span><div className={`text-lg font-black ${stats.roi >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{stats.roi >= 0 ? 'PRODUTIVO' : 'REVISÃO'}</div></div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-               <h3 className="font-black text-sm uppercase tracking-widest mb-6 flex items-center gap-2"><BarChart3 size={16} className="text-blue-500" /> Performance Visual</h3>
-               <div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={historico.slice().reverse()}><CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} /><XAxis dataKey="data" stroke="#64748b" fontSize={10} hide /><YAxis stroke="#64748b" fontSize={10} axisLine={false} tickLine={false} domain={['auto', 'auto']} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}/><Line type="monotone" dataKey="bancaResultante" stroke="#3b82f6" strokeWidth={3} dot={false} /></LineChart></ResponsiveContainer></div>
-            </div>
-          </div>
-        )}
-
-        {view === 'operacoes' && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-            <div className="p-6 border-b border-slate-800"><h3 className="font-black text-lg tracking-tight text-white uppercase">Log de Auditoria</h3></div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-slate-950 text-slate-400 text-[10px] uppercase tracking-wider font-black"><tr><th className="px-6 py-4">Horário</th><th className="px-6 py-4">Stake</th><th className="px-6 py-4">Resultado</th><th className="px-6 py-4">Impacto</th><th className="px-6 py-4">Saldo</th><th className="px-6 py-4">Status</th></tr></thead>
-                <tbody className="divide-y divide-slate-800">
-                  {historico.map((row) => (<tr key={row.id} className="hover:bg-slate-800/50 transition-colors"><td className="px-6 py-4 text-xs text-slate-400">{row.data}</td><td className="px-6 py-4 text-xs font-bold text-white">R$ {row.valor}</td><td className="px-6 py-4"><span className={`px-2 py-1 rounded text-[9px] font-black uppercase ${row.resultado === 'V' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>{row.resultado === 'V' ? 'Win' : 'Loss'}</span></td><td className={`px-6 py-4 text-xs font-black ${String(row.lucro).includes('+') ? 'text-emerald-500' : 'text-red-500'}`}>{row.lucro}</td><td className="px-6 py-4 text-xs text-white font-mono">R$ {row.bancaResultante}</td><td className="px-6 py-4 text-[10px] text-slate-500 font-bold uppercase">{row.status}</td></tr>))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {view === 'projecoes' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg">
-              <h3 className="font-black text-lg mb-6 flex items-center gap-2 uppercase tracking-tighter"><Settings className="text-blue-500" /> Parâmetros de Gestão</h3>
-              <div className="space-y-6">
-                <div><label className="text-xs text-slate-500 uppercase font-bold mb-2 block tracking-widest">Banca Base (R$)</label><input type="number" value={config.bancaInicial} onChange={(e) => setConfig({...config, bancaInicial: Number(e.target.value)})} className="w-full bg-black border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none font-bold" /></div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><label className="text-xs text-slate-500 uppercase font-bold mb-2 block text-emerald-500 tracking-widest">Stop Win (%)</label><input type="number" step="0.1" value={config.objetivoDiario} onChange={(e) => setConfig({...config, objetivoDiario: Number(e.target.value)})} className="w-full bg-black border border-emerald-900/30 border rounded-lg px-4 py-3 text-white focus:border-emerald-500 outline-none font-bold" /></div>
-                  <div><label className="text-xs text-slate-500 uppercase font-bold mb-2 block text-red-500 tracking-widest">Stop Loss (%)</label><input type="number" step="0.1" value={config.stopLossDiario} onChange={(e) => setConfig({...config, stopLossDiario: Number(e.target.value)})} className="w-full bg-black border border-red-900/30 border rounded-lg px-4 py-3 text-white focus:border-red-500 outline-none font-bold" /></div>
-                </div>
-                <div className="pt-6 border-t border-slate-800">
-                  <h4 className="text-xs text-slate-500 uppercase font-bold mb-4 tracking-widest flex items-center gap-2"><RefreshCcw size={14} className="text-blue-500" /> Backup & Sincronização</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button onClick={exportToCSV} disabled={historico.length === 0} className="flex items-center justify-center gap-2 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg transition-all text-[10px] uppercase tracking-wider disabled:opacity-50"><FileSpreadsheet size={16} className="text-emerald-500" /> Exportar Excel</button>
-                    <button onClick={() => fileInputRef.current.click()} className="flex items-center justify-center gap-2 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg transition-all text-[10px] uppercase tracking-wider"><Upload size={16} className="text-blue-500" /> Importar Excel</button>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowResetConfirm(true)} 
-                  className="w-full py-4 bg-slate-800 hover:bg-red-900/40 border border-slate-700 hover:border-red-500/50 text-white font-black rounded-xl transition-all text-xs uppercase tracking-[0.2em] mt-4 shadow-lg shadow-red-900/10"
-                >
-                  Reset Total do Sistema
-                </button>
-              </div>
-            </div>
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-              <h3 className="font-black text-lg mb-6 flex items-center gap-2 uppercase tracking-tighter"><Calculator className="text-blue-500" /> Projeção Exponencial</h3>
-              <div className="space-y-4">
-                <div className="p-4 bg-black/30 rounded-lg border-l-4 border-emerald-500"><span className="text-slate-400 text-[10px] font-black uppercase block mb-1">Estimativa 7 Dias</span><span className="font-black text-2xl text-white">R$ {(bancaAtual * Math.pow(1 + ((config.objetivoDiario || 0)/100), 7) || 0).toFixed(2)}</span></div>
-                <div className="p-4 bg-black/30 rounded-lg border-l-4 border-blue-500"><span className="text-slate-400 text-[10px] font-black uppercase block mb-1">Estimativa 30 Dias</span><span className="font-black text-2xl text-white">R$ {(bancaAtual * Math.pow(1 + ((config.objetivoDiario || 0)/100), 30) || 0).toFixed(2)}</span></div>
-                <div className="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20"><div className="flex justify-between items-center"><div><span className="text-emerald-500 font-black block text-xs uppercase">Saque Planejado (50% Lucro)</span></div><span className="font-black text-xl text-white">R$ {((bancaAtual * ((config.objetivoMensal || 0)/100))/2 || 0).toFixed(2)}</span></div></div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      <footer className="max-w-7xl mx-auto mt-12 mb-8 text-center"><div className="inline-block px-6 py-2 bg-slate-900 border border-slate-800 rounded-full"><p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em]">Gestão Pro • Modal de Segurança Ativo v4.3</p></div></footer>
-    </div>
-  );
-};
-
-export default App;
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            const passInput = document.getElementById('admin-pass');
+            if(passInput) passInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.checkAdmin(); });
+            window.initData();
+            window.renderMenu('all');
+            window.updateCartUI(); 
+        });
+    </script>
+</body>
+</html>

@@ -1,508 +1,457 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000">
-    <meta name="application-name" content="DEL 8">
-    
-    <title>DEL 8 - Sistema Local</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Markdown Parser -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <style>
-        body { font-family: 'Montserrat', sans-serif; background-color: #000000; color: #e5e7eb; overscroll-behavior-y: none; }
-        h1, h2, h3, h4, .brand-font, .cat-btn, .price-tag { font-family: 'Righteous', cursive; letter-spacing: 0.05em; }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        .card-gradient { background: linear-gradient(145deg, #111111, #0a0a0a); border: 1px solid #333; }
-        .ai-gradient { background: linear-gradient(135deg, #f97316, #ef4444); }
-        .active-tab { color: #f97316; border-bottom: 2px solid #f97316; }
-        .safe-bottom { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes pulse-ring { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); } }
-        .ai-pulse { animation: pulse-ring 2s infinite; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #000000; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        input:focus, textarea:focus, select:focus { border-color: #f97316 !important; outline: none; ring-color: #f97316 !important; }
-        .icon { width: 1em; height: 1em; display: inline-block; fill: currentColor; }
-        
-        /* Drag & Drop Visuals */
-        .drag-over { background-color: rgba(249, 115, 22, 0.15); border: 2px dashed #f97316; transform: scale(1.01); transition: all 0.2s; }
-        .draggable { cursor: grab; }
-        .draggable:active { cursor: grabbing; }
-        .dragging { opacity: 0.4; transform: scale(0.95); }
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell
+} from 'recharts';
+import { 
+  TrendingUp, 
+  ShieldAlert, 
+  Target, 
+  Wallet, 
+  Calculator, 
+  Settings,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Info,
+  Zap,
+  Layers,
+  ArrowRight,
+  BarChart3,
+  Activity,
+  PieChart as PieChartIcon,
+  Download,
+  Upload,
+  FileSpreadsheet,
+  RefreshCcw,
+  Trash2
+} from 'lucide-react';
 
-        #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; pointer-events: none; }
-    </style>
-</head>
-<body class="safe-bottom">
+const App = () => {
+  // --- ESTADO INICIAL ---
+  const [config, setConfig] = useState({
+    bancaInicial: 1000,
+    objetivoMensal: 60,
+    objetivoDiario: 1.75,
+    stopLossDiario: 3.0,
+    risco: 'Moderado'
+  });
 
-    <!-- Loading Screen -->
-    <div id="loading-overlay">
-        <div class="text-center">
-            <svg class="icon text-orange-500 text-6xl ai-pulse mb-4" viewBox="0 0 24 24"><path d="M20 10C20 5 4 5 4 10H20ZM3 11H21V14H3V11ZM4 15H20V18C20 20 4 20 4 18V15Z"></path></svg>
-            <h2 class="text-white text-xl font-bold tracking-widest">CARREGANDO...</h2>
+  const [bancaAtual, setBancaAtual] = useState(1000);
+  const [historico, setHistorico] = useState([]);
+  const [view, setView] = useState('dashboard');
+  
+  // Controle de Ciclo (1, 2 ou 3)
+  const [cicloStep, setCicloStep] = useState(1);
+  const [lucroAcumuladoCiclo, setLucroAcumuladoCiclo] = useState(0);
+  
+  // Novo estado para confirmação de Reset
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const fileInputRef = useRef(null);
+
+  // --- CÁLCULOS MATEMÁTICOS ---
+  const apostaBase = useMemo(() => (bancaAtual || 0) * 0.01, [bancaAtual]);
+  
+  const cicloValues = useMemo(() => ({
+    step1: apostaBase,
+    step2: apostaBase * 2,
+    step3: apostaBase * 4,
+  }), [apostaBase]);
+
+  const valorEntradaAtual = useMemo(() => {
+    if (cicloStep === 1) return cicloValues.step1;
+    if (cicloStep === 2) return cicloValues.step2;
+    return cicloValues.step3;
+  }, [cicloStep, cicloValues]);
+
+  // --- MÉTRICAS DE DESEMPENHO AVANÇADAS ---
+  const stats = useMemo(() => {
+    const totalEntradas = historico.length;
+    const wins = historico.filter(h => h.resultado === 'V').length;
+    const losses = historico.filter(h => h.resultado === 'R').length;
+    const taxaAcerto = totalEntradas > 0 ? (wins / totalEntradas) * 100 : 0;
+    
+    const ciclosCompletos = historico.filter(h => h.status === "Ciclo Finalizado").length;
+    const ciclosIniciados = historico.filter(h => 
+      h.status === "Passo 1 OK" || (h.resultado === 'R' && h.status === "Ciclo Interrompido")
+    ).length; 
+    const eficienciaCiclo = ciclosIniciados > 0 ? (ciclosCompletos / ciclosIniciados) * 100 : 0;
+
+    const lucroTotal = (bancaAtual || 0) - (config.bancaInicial || 0);
+
+    const lucroBruto = historico.reduce((acc, curr) => {
+        const val = parseFloat(String(curr.lucro).replace(/[^+0-9.-]/g, '')) || 0;
+        return val > 0 ? acc + val : acc;
+    }, 0);
+    const perdaBruta = Math.abs(historico.reduce((acc, curr) => {
+        const val = parseFloat(String(curr.lucro).replace(/[^+0-9.-]/g, '')) || 0;
+        return val < 0 ? acc + val : acc;
+    }, 0));
+
+    const profitFactor = perdaBruta > 0 ? (lucroBruto / perdaBruta).toFixed(2) : (lucroBruto > 0 ? lucroBruto.toFixed(2) : "0.00");
+    const roi = config.bancaInicial > 0 ? (lucroTotal / config.bancaInicial) * 100 : 0;
+
+    return { 
+        totalEntradas, wins, losses, taxaAcerto, 
+        ciclosCompletos, ciclosIniciados, eficienciaCiclo,
+        profitFactor, roi, lucroTotal,
+        pieData: [
+            { name: 'Wins', value: wins, color: '#10b981' },
+            { name: 'Losses', value: losses, color: '#ef4444' }
+        ]
+    };
+  }, [historico, bancaAtual, config.bancaInicial]);
+
+  const statusRisco = useMemo(() => {
+    const base = config.bancaInicial || 1;
+    const percentual = (bancaAtual / base) * 100;
+    if (percentual > 95) return { cor: 'bg-green-500', label: 'NORMAL', exposicao: '3%' };
+    if (percentual >= 90) return { cor: 'bg-yellow-500', label: 'ATENÇÃO', exposicao: '2%' };
+    return { cor: 'bg-red-500', label: 'CRÍTICO', exposicao: '1%' };
+  }, [bancaAtual, config.bancaInicial]);
+
+  const projecoes = useMemo(() => {
+    const data = [];
+    let tempBanca = bancaAtual || 0;
+    const taxaDiaria = (config.objetivoDiario || 0) / 100;
+    for (let i = 0; i <= 30; i++) {
+      data.push({ dia: `Dia ${i}`, valor: parseFloat(tempBanca.toFixed(2)) });
+      tempBanca *= (1 + taxaDiaria);
+    }
+    return data;
+  }, [bancaAtual, config.objetivoDiario]);
+
+  // --- LÓGICA DE BACKUP (EXCEL/CSV) ---
+  const exportToCSV = () => {
+    if (historico.length === 0) return;
+    const headers = ["Data/Hora", "Stake (R$)", "Resultado", "Lucro/Prej (R$)", "Saldo (R$)", "Status"];
+    const rows = historico.map(h => [h.data, h.valor, h.resultado === 'V' ? 'GREEN' : 'RED', h.lucro, h.bancaResultante, h.status]);
+    const csvContent = "\ufeff" + [headers, ...rows].map(e => e.join(";")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `GESTAO_PRO_BACKUP_${new Date().toISOString().slice(0,10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const importFromCSV = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split("\n").filter(line => line.trim() !== "");
+        const importedHistory = lines.slice(1).map((line, index) => {
+          const columns = line.replace("\ufeff", "").split(";");
+          if (columns.length < 5) return null;
+          return {
+            id: Date.now() + index,
+            data: columns[0],
+            valor: columns[1],
+            resultado: columns[2] === 'GREEN' ? 'V' : 'R',
+            lucro: columns[3],
+            bancaResultante: parseFloat(columns[4]),
+            status: columns[5]
+          };
+        }).filter(item => item !== null);
+        if (importedHistory.length > 0) {
+          setHistorico(importedHistory);
+          setBancaAtual(importedHistory[0].bancaResultante);
+          setCicloStep(1);
+          setLucroAcumuladoCiclo(0);
+          setView('desempenho');
+        }
+      } catch (err) { console.error("Erro ao importar CSV:", err); }
+    };
+    reader.readAsText(file);
+    event.target.value = null;
+  };
+
+  // --- LÓGICA DE RESET ---
+  const handleReset = () => {
+    setBancaAtual(config.bancaInicial);
+    setHistorico([]);
+    setCicloStep(1);
+    setLucroAcumuladoCiclo(0);
+    setShowResetConfirm(false);
+  };
+
+  // --- LÓGICA DE ATUALIZAÇÃO DE CICLO ---
+  const processarEntrada = (resultado) => {
+    const valorAtual = valorEntradaAtual || 0;
+    const lucroDestaEntrada = valorAtual * 0.9; 
+    if (resultado === 'V') {
+      const novoLucroAcumulado = lucroAcumuladoCiclo + lucroDestaEntrada;
+      if (cicloStep < 3) {
+        setLucroAcumuladoCiclo(novoLucroAcumulado);
+        setCicloStep(cicloStep + 1);
+        setHistorico([{
+          id: Date.now(),
+          data: new Date().toLocaleTimeString(),
+          valor: valorAtual.toFixed(2),
+          resultado: 'V',
+          bancaResultante: Number(bancaAtual.toFixed(2)),
+          lucro: `+${lucroDestaEntrada.toFixed(2)} (Em Ciclo)`,
+          status: `Passo ${cicloStep} OK`
+        }, ...historico]);
+      } else {
+        const lucroFinalCiclo = novoLucroAcumulado;
+        const novaBanca = bancaAtual + lucroFinalCiclo;
+        setBancaAtual(novaBanca);
+        setLucroAcumuladoCiclo(0);
+        setCicloStep(1);
+        setHistorico([{
+          id: Date.now(),
+          data: new Date().toLocaleTimeString(),
+          valor: valorAtual.toFixed(2),
+          resultado: 'V',
+          bancaResultante: Number(novaBanca.toFixed(2)),
+          lucro: `+${lucroFinalCiclo.toFixed(2)} (CICLO COMPLETO)`,
+          status: "Ciclo Finalizado"
+        }, ...historico]);
+      }
+    } else {
+      const novaBanca = bancaAtual - valorAtual;
+      setBancaAtual(novaBanca);
+      setLucroAcumuladoCiclo(0);
+      setCicloStep(1);
+      setHistorico([{
+        id: Date.now(),
+        data: new Date().toLocaleTimeString(),
+        valor: valorAtual.toFixed(2),
+        resultado: 'R',
+        bancaResultante: Number(novaBanca.toFixed(2)),
+        lucro: `-${valorAtual.toFixed(2)}`,
+        status: "Ciclo Interrompido"
+      }, ...historico]);
+    }
+  };
+
+  const Card = ({ title, value, icon: Icon, color, subValue }) => (
+    <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-lg">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-slate-400 text-sm font-medium mb-1 uppercase tracking-wider">{title}</p>
+          <h3 className="text-2xl font-bold text-white">{value}</h3>
+          {subValue && <p className="text-xs mt-1 text-slate-500">{subValue}</p>}
         </div>
+        <div className={`p-3 rounded-lg ${color} bg-opacity-10`}>
+          <Icon size={20} className={color.replace('bg-', 'text-')} />
+        </div>
+      </div>
     </div>
+  );
 
-    <!-- Header -->
-    <header class="fixed top-0 w-full bg-black border-b border-gray-900 z-50 shadow-md shadow-orange-900/20">
-        <div class="flex items-center justify-between px-4 py-3 max-w-4xl mx-auto">
-            <div class="flex items-center space-x-2">
-                <svg class="icon text-orange-500 text-3xl" viewBox="0 0 24 24"><path d="M20 10C20 5 4 5 4 10H20ZM3 11H21V14H3V11ZM4 15H20V18C20 20 4 20 4 18V15Z"></path></svg>
-                <h1 class="text-2xl font-bold tracking-wider text-white">DEL<span class="text-orange-500">8</span></h1>
+  return (
+    <div className="min-h-screen bg-black text-slate-200 font-sans p-4 md:p-8 relative">
+      
+      {/* MODAL DE CONFIRMAÇÃO DE RESET */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-red-500/30 p-8 rounded-2xl max-w-md w-full shadow-[0_0_50px_rgba(239,68,68,0.2)]">
+            <div className="flex items-center gap-4 text-red-500 mb-6">
+              <div className="p-3 bg-red-500/10 rounded-full">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-xl font-black uppercase tracking-tighter italic">Confirmar Reset Total?</h3>
             </div>
-            <div class="flex items-center space-x-4">
-                <div id="connection-status" class="flex items-center gap-1 text-[10px] text-gray-500 font-mono">
-                    <span class="status-dot status-offline" id="status-dot"></span> <span id="status-text">LOCAL</span>
+            <p className="text-slate-400 text-sm leading-relaxed mb-8">
+              Esta ação é **irreversível**. Você perderá todo o histórico de operações, métricas de desempenho e o saldo atual será retornado ao valor inicial. Deseja prosseguir?
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all text-xs uppercase tracking-widest"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleReset}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl transition-all text-xs uppercase tracking-widest shadow-lg shadow-red-600/20"
+              >
+                Sim, Resetar Tudo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* INPUT FILE OCULTO */}
+      <input type="file" ref={fileInputRef} onChange={importFromCSV} accept=".csv" className="hidden" />
+
+      {/* HEADER */}
+      <header className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tighter flex items-center gap-2">
+            <ShieldAlert className="text-blue-500" /> GESTÃO <span className="text-blue-500">PRO</span>
+          </h1>
+          <p className="text-slate-500 text-sm uppercase font-bold tracking-widest">Controle de Desempenho e Ciclos</p>
+        </div>
+        
+        <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800 overflow-x-auto max-w-full">
+          <button onClick={() => setView('dashboard')} className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${view === 'dashboard' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Dashboard</button>
+          <button onClick={() => setView('desempenho')} className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${view === 'desempenho' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Desempenho</button>
+          <button onClick={() => setView('operacoes')} className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${view === 'operacoes' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Operações</button>
+          <button onClick={() => setView('projecoes')} className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${view === 'projecoes' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Ajustes</button>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto space-y-6">
+        
+        {/* INDICADORES RÁPIDOS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card title="Banca Atual" value={`R$ ${bancaAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} icon={Wallet} color="bg-blue-500" subValue={`Lucro Virtual: R$ ${(lucroAcumuladoCiclo || 0).toFixed(2)}`} />
+          <Card title="Taxa de Acerto" value={`${(stats.taxaAcerto || 0).toFixed(1)}%`} icon={Target} color="bg-emerald-500" subValue={`${stats.wins} Wins / ${stats.losses} Losses`} />
+          <Card title="Eficiência Ciclo" value={`${(stats.eficienciaCiclo || 0).toFixed(1)}%`} icon={Zap} color="bg-yellow-500" subValue={`${stats.ciclosCompletos} Ciclos Finalizados`} />
+          <Card title="ROI Global" value={`${(stats.roi || 0).toFixed(2)}%`} icon={TrendingUp} color={stats.roi >= 0 ? "bg-emerald-500" : "bg-red-500"} subValue={`Total: R$ ${(stats.lucroTotal || 0).toFixed(2)}`} />
+        </div>
+
+        {view === 'dashboard' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10"><Zap size={80} className="text-blue-500" /></div>
+              <div className="flex items-center justify-between mb-8 border-b border-slate-800 pb-4">
+                <div className="flex items-center gap-2">
+                  <Layers className="text-blue-500" /><h3 className="font-black text-xl text-white uppercase tracking-tighter">Execução de Ciclo</h3>
                 </div>
-                <button onclick="switchTab('admin')" class="text-gray-600 hover:text-orange-500 transition" title="Área Restrita">
-                    <svg class="icon text-lg" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path></svg>
+                <div className="flex gap-1">
+                  {[1, 2, 3].map(s => (<div key={s} className={`w-8 h-2 rounded-full ${cicloStep >= s ? 'bg-blue-500' : 'bg-slate-800'}`}></div>))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className={`p-5 rounded-xl border transition-all ${cicloStep === 1 ? 'bg-blue-600/10 border-blue-500 scale-105 shadow-xl' : 'bg-black/20 border-slate-800 opacity-50'}`}>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Passo 1</span>
+                  <div className="text-3xl font-black text-white">R$ {(cicloValues.step1 || 0).toFixed(2)}</div>
+                  <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase">Entrada 1%</p>
+                </div>
+                <div className={`p-5 rounded-xl border transition-all ${cicloStep === 2 ? 'bg-blue-600/10 border-blue-500 scale-105 shadow-xl' : 'bg-black/20 border-slate-800 opacity-50'}`}>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Passo 2</span>
+                  <div className="text-3xl font-black text-white">R$ {(cicloValues.step2 || 0).toFixed(2)}</div>
+                  <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase">Entrada 2%</p>
+                </div>
+                <div className={`p-5 rounded-xl border transition-all ${cicloStep === 3 ? 'bg-blue-600/10 border-blue-500 scale-105 shadow-xl' : 'bg-black/20 border-slate-800 opacity-50'}`}>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Passo 3</span>
+                  <div className="text-3xl font-black text-white">R$ {(cicloValues.step3 || 0).toFixed(2)}</div>
+                  <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase">Entrada 4%</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-4">
+                 <button onClick={() => processarEntrada('V')} className="flex-1 py-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl transition-all flex flex-col items-center justify-center gap-1 uppercase group shadow-lg">
+                   <CheckCircle2 size={24} /><span className="text-xs">Registrar Vitória</span>
+                   <span className="text-[10px] opacity-70">Stake: R$ {(valorEntradaAtual || 0).toFixed(2)}</span>
+                 </button>
+                 <button onClick={() => processarEntrada('R')} className="flex-1 py-6 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl transition-all flex flex-col items-center justify-center gap-1 uppercase group shadow-lg">
+                   <XCircle size={24} /><span className="text-xs">Registrar Derrota</span>
+                   <span className="text-[10px] opacity-70">Resetar Ciclo</span>
+                 </button>
+              </div>
+            </div>
+
+            <div className="lg:col-span-4 space-y-4">
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+                <h3 className="font-black text-xs mb-4 uppercase tracking-widest flex items-center gap-2 text-blue-500"><Info size={16} /> Protocolo</h3>
+                <div className="space-y-4 text-[11px] text-slate-400">
+                   <p><span className="text-emerald-500 font-bold">Vitória P1/P2:</span> Banca estável, lucro acumulado.</p>
+                   <p><span className="text-emerald-500 font-bold">Vitória P3:</span> Ciclo encerrado, lucro em banca.</p>
+                   <p><span className="text-red-500 font-bold">Qualquer Red:</span> Subtração imediata e reset.</p>
+                </div>
+              </div>
+              <div className="bg-blue-600/10 border border-blue-500/30 p-5 rounded-xl">
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block mb-2">Lucro Ciclo Completo</span>
+                <div className="text-2xl font-black text-white">R$ {(apostaBase * 7 || 0).toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {view === 'desempenho' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl flex flex-col items-center justify-center">
+                <h3 className="font-black text-sm uppercase tracking-widest mb-6 self-start flex items-center gap-2"><PieChartIcon size={16} className="text-blue-500" /> Mix de Resultados</h3>
+                <div className="h-48 w-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={stats.pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">{stats.pieData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}</Pie><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}/></PieChart></ResponsiveContainer></div>
+                <div className="flex gap-6 mt-4"><div className="flex items-center gap-2"><div className="w-3 h-3 bg-emerald-500 rounded-full"></div> <span className="text-xs">Wins</span></div><div className="flex items-center gap-2"><div className="w-3 h-3 bg-red-500 rounded-full"></div> <span className="text-xs">Losses</span></div></div>
+              </div>
+              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-xl">
+                <h3 className="font-black text-sm uppercase tracking-widest mb-6 flex items-center gap-2 text-white"><Activity size={16} className="text-blue-500" /> Saúde do Sistema</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Profit Factor</span><div className="text-2xl font-black text-white">{stats.profitFactor}</div></div>
+                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Total Ciclos</span><div className="text-2xl font-black text-white">{stats.ciclosIniciados}</div></div>
+                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Total Entradas</span><div className="text-2xl font-black text-white">{stats.totalEntradas}</div></div>
+                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Meta Batida</span><div className="text-2xl font-black text-white">{(stats.roi || 0).toFixed(1)}%</div></div>
+                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Média Stake</span><div className="text-2xl font-black text-white">R$ {(apostaBase || 0).toFixed(2)}</div></div>
+                   <div className="bg-black/30 p-4 rounded-xl border border-slate-800"><span className="text-[10px] text-slate-500 font-black uppercase block mb-1">Status Final</span><div className={`text-lg font-black ${stats.roi >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{stats.roi >= 0 ? 'PRODUTIVO' : 'REVISÃO'}</div></div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+               <h3 className="font-black text-sm uppercase tracking-widest mb-6 flex items-center gap-2"><BarChart3 size={16} className="text-blue-500" /> Performance Visual</h3>
+               <div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={historico.slice().reverse()}><CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} /><XAxis dataKey="data" stroke="#64748b" fontSize={10} hide /><YAxis stroke="#64748b" fontSize={10} axisLine={false} tickLine={false} domain={['auto', 'auto']} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}/><Line type="monotone" dataKey="bancaResultante" stroke="#3b82f6" strokeWidth={3} dot={false} /></LineChart></ResponsiveContainer></div>
+            </div>
+          </div>
+        )}
+
+        {view === 'operacoes' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+            <div className="p-6 border-b border-slate-800"><h3 className="font-black text-lg tracking-tight text-white uppercase">Log de Auditoria</h3></div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-slate-950 text-slate-400 text-[10px] uppercase tracking-wider font-black"><tr><th className="px-6 py-4">Horário</th><th className="px-6 py-4">Stake</th><th className="px-6 py-4">Resultado</th><th className="px-6 py-4">Impacto</th><th className="px-6 py-4">Saldo</th><th className="px-6 py-4">Status</th></tr></thead>
+                <tbody className="divide-y divide-slate-800">
+                  {historico.map((row) => (<tr key={row.id} className="hover:bg-slate-800/50 transition-colors"><td className="px-6 py-4 text-xs text-slate-400">{row.data}</td><td className="px-6 py-4 text-xs font-bold text-white">R$ {row.valor}</td><td className="px-6 py-4"><span className={`px-2 py-1 rounded text-[9px] font-black uppercase ${row.resultado === 'V' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>{row.resultado === 'V' ? 'Win' : 'Loss'}</span></td><td className={`px-6 py-4 text-xs font-black ${String(row.lucro).includes('+') ? 'text-emerald-500' : 'text-red-500'}`}>{row.lucro}</td><td className="px-6 py-4 text-xs text-white font-mono">R$ {row.bancaResultante}</td><td className="px-6 py-4 text-[10px] text-slate-500 font-bold uppercase">{row.status}</td></tr>))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {view === 'projecoes' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg">
+              <h3 className="font-black text-lg mb-6 flex items-center gap-2 uppercase tracking-tighter"><Settings className="text-blue-500" /> Parâmetros de Gestão</h3>
+              <div className="space-y-6">
+                <div><label className="text-xs text-slate-500 uppercase font-bold mb-2 block tracking-widest">Banca Base (R$)</label><input type="number" value={config.bancaInicial} onChange={(e) => setConfig({...config, bancaInicial: Number(e.target.value)})} className="w-full bg-black border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none font-bold" /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="text-xs text-slate-500 uppercase font-bold mb-2 block text-emerald-500 tracking-widest">Stop Win (%)</label><input type="number" step="0.1" value={config.objetivoDiario} onChange={(e) => setConfig({...config, objetivoDiario: Number(e.target.value)})} className="w-full bg-black border border-emerald-900/30 border rounded-lg px-4 py-3 text-white focus:border-emerald-500 outline-none font-bold" /></div>
+                  <div><label className="text-xs text-slate-500 uppercase font-bold mb-2 block text-red-500 tracking-widest">Stop Loss (%)</label><input type="number" step="0.1" value={config.stopLossDiario} onChange={(e) => setConfig({...config, stopLossDiario: Number(e.target.value)})} className="w-full bg-black border border-red-900/30 border rounded-lg px-4 py-3 text-white focus:border-red-500 outline-none font-bold" /></div>
+                </div>
+                <div className="pt-6 border-t border-slate-800">
+                  <h4 className="text-xs text-slate-500 uppercase font-bold mb-4 tracking-widest flex items-center gap-2"><RefreshCcw size={14} className="text-blue-500" /> Backup & Sincronização</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button onClick={exportToCSV} disabled={historico.length === 0} className="flex items-center justify-center gap-2 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg transition-all text-[10px] uppercase tracking-wider disabled:opacity-50"><FileSpreadsheet size={16} className="text-emerald-500" /> Exportar Excel</button>
+                    <button onClick={() => fileInputRef.current.click()} className="flex items-center justify-center gap-2 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg transition-all text-[10px] uppercase tracking-wider"><Upload size={16} className="text-blue-500" /> Importar Excel</button>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowResetConfirm(true)} 
+                  className="w-full py-4 bg-slate-800 hover:bg-red-900/40 border border-slate-700 hover:border-red-500/50 text-white font-black rounded-xl transition-all text-xs uppercase tracking-[0.2em] mt-4 shadow-lg shadow-red-900/10"
+                >
+                  Reset Total do Sistema
                 </button>
-                <div class="relative cursor-pointer" onclick="switchTab('cart')">
-                    <svg class="icon text-xl text-gray-300 hover:text-orange-500 transition" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path><circle cx="10.5" cy="19.5" r="1.5"></circle><circle cx="17.5" cy="19.5" r="1.5"></circle></svg>
-                    <span id="header-cart-count" class="absolute -top-2 -right-2 bg-orange-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
-                </div>
+              </div>
             </div>
-        </div>
-    </header>
-
-    <!-- Main -->
-    <main class="mt-16 max-w-4xl mx-auto p-4 relative">
-        
-        <!-- MENU -->
-        <div id="view-menu" class="animate-fade-in pb-16">
-            <div class="flex space-x-4 overflow-x-auto hide-scroll pb-4 mb-2 sticky top-16 bg-black z-40 py-2 border-b border-gray-900/50">
-                <button onclick="filterCategory('all')" class="cat-btn bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap active-cat transition-all transform hover:scale-105 shadow-lg shadow-orange-900/40">Todos</button>
-                <button onclick="filterCategory('BURGER REGRETS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap hover:bg-gray-800 hover:text-orange-500 transition-all transform hover:scale-105">Burgers</button>
-                <button onclick="filterCategory('ACOMPANHAMENTOS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap hover:bg-gray-800 hover:text-orange-500 transition-all transform hover:scale-105">Acompanhamentos</button>
-                <button onclick="filterCategory('BEBIDAS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap hover:bg-gray-800 hover:text-orange-500 transition-all transform hover:scale-105">Bebidas</button>
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+              <h3 className="font-black text-lg mb-6 flex items-center gap-2 uppercase tracking-tighter"><Calculator className="text-blue-500" /> Projeção Exponencial</h3>
+              <div className="space-y-4">
+                <div className="p-4 bg-black/30 rounded-lg border-l-4 border-emerald-500"><span className="text-slate-400 text-[10px] font-black uppercase block mb-1">Estimativa 7 Dias</span><span className="font-black text-2xl text-white">R$ {(bancaAtual * Math.pow(1 + ((config.objetivoDiario || 0)/100), 7) || 0).toFixed(2)}</span></div>
+                <div className="p-4 bg-black/30 rounded-lg border-l-4 border-blue-500"><span className="text-slate-400 text-[10px] font-black uppercase block mb-1">Estimativa 30 Dias</span><span className="font-black text-2xl text-white">R$ {(bancaAtual * Math.pow(1 + ((config.objetivoDiario || 0)/100), 30) || 0).toFixed(2)}</span></div>
+                <div className="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20"><div className="flex justify-between items-center"><div><span className="text-emerald-500 font-black block text-xs uppercase">Saque Planejado (50% Lucro)</span></div><span className="font-black text-xl text-white">R$ {((bancaAtual * ((config.objetivoMensal || 0)/100))/2 || 0).toFixed(2)}</span></div></div>
+              </div>
             </div>
-            <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-        </div>
+          </div>
+        )}
+      </main>
 
-        <!-- CARRINHO -->
-        <div id="view-cart" class="hidden animate-fade-in h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar p-1">
-            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                <h2 class="text-2xl font-bold text-white">Seu Carrinho</h2>
-                <div class="flex gap-2">
-                    <button id="btn-analyze-cart" onclick="analyzeCart()" class="hidden text-xs bg-gray-900 text-orange-400 border border-orange-500/50 px-3 py-1 rounded-full flex items-center gap-2 hover:bg-gray-800 transition font-bold"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-12h2v6h-2zm0 8h2v2h-2z"></path></svg> <span>Julgar</span></button>
-                    <button id="btn-diet-excuse" onclick="generateDietExcuse()" class="hidden text-xs bg-gray-900 text-green-400 border border-green-500/50 px-3 py-1 rounded-full flex items-center gap-2 hover:bg-gray-800 transition font-bold"><svg class="icon" viewBox="0 0 24 24"><path d="M2 22a8 8 0 1 1 16 0h-2a6 6 0 1 0-12 0H2zm8-9c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-4c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg> <span>Desculpa p/ Nutri</span></button>
-                </div>
-            </div>
-            <div id="cart-ai-response" class="hidden mb-4 bg-gray-900 border border-orange-500/30 p-3 rounded-lg text-sm text-gray-300 relative">
-                <svg class="icon absolute top-2 left-2 text-orange-500/20 text-2xl" viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"></path></svg>
-                <div id="cart-ai-text" class="pl-4 italic font-sans"></div>
-                <button onclick="closeCartAi()" class="absolute top-1 right-2 text-gray-500 hover:text-white">&times;</button>
-            </div>
-            <div id="cart-items-container" class="space-y-4 mb-6"></div>
-            <div id="cart-footer" class="hidden bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-800 mb-4">
-                <div class="flex justify-between items-center mb-2 text-gray-400 text-sm font-sans"><span>Subtotal</span><span id="cart-subtotal" class="font-bold font-mono text-white">R$ 0,00</span></div>
-                <div class="flex justify-between items-center mb-4 text-white text-xl font-bold border-t border-gray-800 pt-2"><span>Total</span><span id="cart-total" class="text-orange-500 text-2xl">R$ 0,00</span></div>
-                <input type="text" id="customer-name" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-orange-500 font-sans transition-colors" placeholder="Digite seu nome...">
-                <button onclick="checkout()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-orange-900/20 transition transform active:scale-95 flex justify-center items-center gap-2"><span class="text-lg tracking-wide">FINALIZAR PEDIDO</span><svg class="icon" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"></path></svg></button>
-            </div>
-        </div>
-
-        <!-- ADMIN -->
-        <div id="view-admin" class="hidden animate-fade-in flex flex-col h-[calc(100vh-6rem)]">
-            <div id="admin-login" class="max-w-xs mx-auto mt-10 p-6 bg-gray-900 rounded-xl text-center border border-gray-800 shadow-2xl">
-                <div class="text-orange-500 text-5xl mb-4"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z"></path></svg></div>
-                <h3 class="text-xl font-bold mb-4 text-white">Área Restrita</h3>
-                <input type="password" id="admin-pass" class="w-full bg-black border border-gray-700 rounded p-3 mb-4 text-center text-white font-sans focus:border-orange-500 outline-none" placeholder="Digite a Senha">
-                <button onclick="checkAdmin()" class="w-full bg-orange-600 text-white font-bold py-3 rounded hover:bg-orange-500 transition">ENTRAR</button>
-                <p id="login-error" class="text-red-500 text-xs mt-3 hidden font-sans">Senha incorreta!</p>
-                <button onclick="switchTab('menu')" class="mt-4 text-xs text-gray-500 hover:text-white underline">Voltar ao Menu</button>
-            </div>
-
-            <div id="admin-content-wrapper" class="hidden flex flex-col h-full">
-                <div class="bg-gray-800 p-2 mb-4 rounded border border-gray-700 flex flex-col gap-2">
-                    <label class="text-[10px] text-gray-400 uppercase font-bold">Endereço do Servidor</label>
-                    <div class="flex gap-2"><input type="text" id="server-url-input" class="flex-1 bg-black border border-gray-600 rounded p-1 text-xs text-white" placeholder="Deixe vazio para modo local"><button onclick="saveServerConfig()" class="bg-blue-600 text-white text-xs px-3 rounded font-bold">SALVAR</button></div>
-                    <p id="server-status-msg" class="text-[10px] text-gray-500">Atual: <span id="current-server-display">Local (Offline)</span></p>
-                </div>
-                <div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold text-white">Painel Admin</h2><button onclick="logoutAdmin()" class="text-xs text-red-500 border border-red-900 px-2 py-1 rounded">Sair</button></div>
-                <div class="flex gap-2 p-1 bg-gray-900 rounded-lg border border-gray-800 mb-4"><button onclick="switchAdminView('orders')" id="btn-admin-orders" class="flex-1 py-2 text-sm font-bold rounded bg-orange-600 text-white">PEDIDOS</button><button onclick="switchAdminView('menu')" id="btn-admin-menu" class="flex-1 py-2 text-sm font-bold rounded text-gray-400">CARDÁPIO</button></div>
-
-                <div id="admin-orders-view" class="flex-1 overflow-y-auto custom-scrollbar p-1">
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="bg-gray-900 p-4 rounded-xl border-l-4 border-orange-500 shadow-lg"><p class="text-xs text-gray-400 uppercase font-sans tracking-widest">Receita</p><p id="stat-revenue" class="text-2xl font-bold text-white mt-1">R$ 0,00</p></div>
-                        <div class="bg-gray-900 p-4 rounded-xl border-l-4 border-gray-600 shadow-lg"><p class="text-xs text-gray-400 uppercase font-sans tracking-widest">Pedidos</p><p id="stat-orders" class="text-2xl font-bold text-white mt-1">0</p></div>
-                    </div>
-                    <div class="flex justify-between items-end mb-3 border-b border-gray-800 pb-2">
-                        <h3 class="font-bold text-gray-500 text-sm uppercase">Histórico</h3>
-                        <div class="flex gap-2">
-                            <button id="btn-delete-selected" onclick="deleteSelected()" class="hidden bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 py-1 rounded transition shadow-lg shadow-red-900/20 flex items-center gap-1"><svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg> Apagar (<span id="delete-count">0</span>)</button>
-                            <button onclick="clearAllHistory()" class="text-xs text-red-500 border border-red-900 px-2 py-1 rounded">Limpar</button>
-                        </div>
-                    </div>
-                    
-                    <!-- DRAG & DROP COLUMNS -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20 font-sans h-full">
-                        <!-- Pendentes -->
-                        <div class="flex flex-col">
-                            <h4 class="text-orange-500 font-bold text-xs uppercase mb-2 border-b border-orange-500/30 pb-1 flex items-center gap-2">
-                                <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></path></svg> Pendentes
-                            </h4>
-                            <!-- Drop Zone: Pendente -->
-                            <div id="pending-orders-list" class="space-y-3 min-h-[150px] rounded-lg p-1 transition-colors" 
-                                 ondrop="drop(event, 'Pendente')" 
-                                 ondragover="allowDrop(event)" 
-                                 ondragleave="leaveDrop(event)">
-                            </div>
-                        </div>
-                        
-                        <!-- Prontos -->
-                        <div class="flex flex-col">
-                            <h4 class="text-green-500 font-bold text-xs uppercase mb-2 border-b border-green-500/30 pb-1 flex items-center gap-2">
-                                <svg class="icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></path></svg> Prontos / Entregues
-                            </h4>
-                            <!-- Drop Zone: Pronto -->
-                            <div id="completed-orders-list" class="space-y-3 min-h-[150px] rounded-lg p-1 transition-colors" 
-                                 ondrop="drop(event, 'Pronto')" 
-                                 ondragover="allowDrop(event)" 
-                                 ondragleave="leaveDrop(event)">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="admin-menu-view" class="hidden flex-1 overflow-y-auto custom-scrollbar p-1 pb-20">
-                    <button onclick="generateSlogan()" class="w-full mb-3 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg flex justify-center items-center gap-2 shadow-lg transition transform active:scale-95 text-sm"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"></path></svg> Criar Slogan</button>
-                    <button onclick="openMenuEditModal()" class="w-full mb-4 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2 shadow-lg shadow-green-900/20 transition transform active:scale-95"><svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg> Novo Item</button>
-                    <div id="admin-menu-list" class="space-y-3"></div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Bottom Navigation (Mobile) -->
-    <nav class="fixed bottom-0 w-full bg-black border-t border-gray-900 safe-bottom z-50">
-        <div class="flex justify-around items-center h-16 max-w-4xl mx-auto">
-            <button onclick="switchTab('menu')" id="nav-menu" class="nav-btn flex flex-col items-center text-orange-500"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"></path></svg><span class="text-xs font-bold">Menu</span></button>
-            <button onclick="switchTab('cart')" id="nav-cart" class="nav-btn flex flex-col items-center text-gray-500 relative"><div class="relative"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path><circle cx="10.5" cy="19.5" r="1.5"></circle><circle cx="17.5" cy="19.5" r="1.5"></circle></svg><span id="nav-cart-badge" class="absolute -top-1 -right-2 bg-orange-600 text-white text-[10px] font-bold px-1 rounded-full hidden font-sans">0</span></div><span class="text-xs font-bold">Carrinho</span></button>
-        </div>
-    </nav>
-
-    <!-- Modals -->
-    <div id="modal-item" class="fixed inset-0 bg-black/90 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-gray-900 rounded-xl max-w-md w-full p-5 relative border border-gray-800 shadow-2xl">
-            <button onclick="closeModal()" class="absolute top-3 right-3 text-gray-500 text-xl hover:text-white transition">&times;</button>
-            <h3 id="modal-title" class="text-2xl font-bold text-white mb-1">Nome</h3>
-            <p id="modal-desc" class="text-gray-400 text-sm mb-4 font-sans">Desc</p>
-            <p id="modal-price" class="text-orange-500 font-bold text-2xl mb-4">R$ 0,00</p>
-            <textarea id="modal-obs" class="w-full bg-black border border-gray-700 rounded p-2 text-white text-sm mb-4" rows="2" placeholder="Observações..."></textarea>
-            <div class="flex items-center justify-between mt-6">
-                <div class="flex items-center bg-black rounded-lg p-1 border border-gray-800"><button onclick="changeModalQty(-1)" class="w-10 h-10 text-white font-bold">-</button><span id="modal-qty" class="w-12 text-center text-white text-lg">1</span><button onclick="changeModalQty(1)" class="w-10 h-10 text-white font-bold">+</button></div>
-                <button id="btn-add-to-cart" onclick="confirmAddToCart()" class="bg-orange-600 text-white font-bold py-3 px-6 rounded-lg ml-4 flex-1">ADICIONAR</button>
-            </div>
-        </div>
+      <footer className="max-w-7xl mx-auto mt-12 mb-8 text-center"><div className="inline-block px-6 py-2 bg-slate-900 border border-slate-800 rounded-full"><p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em]">Gestão Pro • Modal de Segurança Ativo v4.3</p></div></footer>
     </div>
+  );
+};
 
-    <div id="modal-menu-edit" class="fixed inset-0 bg-black/95 z-[80] hidden flex items-center justify-center p-4 backdrop-blur-md">
-        <div class="bg-gray-900 rounded-xl max-w-md w-full p-6 relative border border-gray-700 shadow-2xl">
-            <button onclick="closeMenuEditModal()" class="absolute top-3 right-3 text-gray-500 text-xl">&times;</button>
-            <h3 id="menu-edit-title" class="text-xl font-bold text-white mb-4">Editar</h3>
-            <select id="edit-cat" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-3"><option value="BURGER REGRETS">Burgers</option><option value="ACOMPANHAMENTOS">Acompanhamentos</option><option value="BEBIDAS">Bebidas</option></select>
-            <input type="text" id="edit-name" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-3" placeholder="Nome">
-            <button onclick="generateAIDescription()" class="text-xs bg-orange-600 text-white px-2 py-0.5 rounded mb-1">✨ Gerar Descrição</button>
-            <textarea id="edit-desc" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-3" rows="3"></textarea>
-            <input type="number" id="edit-price" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-6" placeholder="Preço">
-            <div class="flex gap-3"><button onclick="saveMenuItem()" class="flex-1 bg-orange-600 text-white font-bold py-3 rounded-lg">Salvar</button></div>
-            <input type="hidden" id="edit-original-cat"><input type="hidden" id="edit-index">
-        </div>
-    </div>
-
-    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl z-[70] hidden flex items-center transition-all duration-300 opacity-0 translate-y-[-20px] font-sans font-bold border border-orange-500">
-        <span id="toast-msg">Item adicionado!</span>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        let db, auth, appId, userId;
-        // Default data...
-        const DEFAULT_MENU = {
-            "BURGER REGRETS": [
-                { id: "BR1", nome: `Simple <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "O clássico infalível: Pão, carne e queijo", preco: 18.00 },
-                { id: "BR2", nome: `Pikle <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Com picles artesanais e molho da casa", preco: 22.00 },
-                { id: "BR3", nome: `Onion <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Cebola caramelizada e cebola crispy", preco: 25.00 },
-                { id: "BR4", nome: `Bacon <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Bacon crocante e molho de bacon", preco: 28.00 },
-                { id: "BR5", nome: `Melt <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Muito queijo cheddar derretido", preco: 30.00 },
-                { id: "BR6", nome: `Rings <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Com anéis de cebola (Onion Rings) dentro", preco: 27.00 },
-                { id: "BR7", nome: `Solemar <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Carne de sol, queijo coalho e manteiga", preco: 33.00 },
-                { id: "BR8", nome: `Monster <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Monstruoso: Carne dupla, bacon e cheddar", preco: 38.00 },
-            ],
-            "ACOMPANHAMENTOS": [{ id: "AC1", nome: "Fries Clássica", desc: "Porção de batata frita clássica", preco: 10.00 },{ id: "AC2", nome: "Fries Turbinada", desc: "Porção de batata frita coberta de bacon", preco: 15.00 },{ id: "AC3", nome: "Onion Rings", desc: "Porção de anéis de cebola empanados", preco: 20.00 },{ id: "AC4", nome: "Onion Rings 2.0", desc: "Anéis de cebola cobertos com coração de carne de sol", preco: 28.00 },],
-            "BEBIDAS": [{ id: "BB1", nome: "Refrigerante Lata", desc: "350ml - Consultar sabores", preco: 6.00 },{ id: "BB2", nome: "Refrigerante 1L", desc: "1 Litro - Consultar sabores", preco: 10.00 },]
-        };
-
-        let serverUrl = localStorage.getItem('del8ServerUrl') || "";
-        let menuData = JSON.parse(localStorage.getItem('del8MenuData')) || DEFAULT_MENU;
-        let cart = [];
-        let localOrders = JSON.parse(localStorage.getItem('del8LocalOrders')) || [];
-        let currentModalItem = null;
-        let modalQtyVal = 1;
-        let pollingInterval = null;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const serverInput = document.getElementById('server-url-input');
-            if(serverInput) serverInput.value = serverUrl;
-            updateConnectionStatus();
-            initData();
-            renderMenu('all');
-            updateCartUI(); 
-            if(serverUrl) startPolling();
-            // Touch Polyfill Init if needed or just rely on native for modern devices? 
-            // We'll rely on the global exposure of drag/drop handlers.
-        });
-
-        // ... (saveServerConfig, updateConnectionStatus, initData, sendOrder, fetchOrders, syncMenu, clearRemoteOrders, startPolling, stopPolling) ...
-        // Re-implementing simplified for context length, same as before:
-        function saveServerConfig() {
-            const input = document.getElementById('server-url-input');
-            serverUrl = input.value.trim();
-            if(serverUrl.endsWith('/')) serverUrl = serverUrl.slice(0, -1);
-            localStorage.setItem('del8ServerUrl', serverUrl);
-            updateConnectionStatus();
-            initData();
-            if(serverUrl) startPolling(); else stopPolling();
-            alert("Configuração salva!");
-        }
-        function updateConnectionStatus() {
-            const dot = document.getElementById('status-dot');
-            const text = document.getElementById('status-text');
-            const display = document.getElementById('current-server-display');
-            if(serverUrl) { dot.classList.replace('status-offline','status-online'); text.innerText = "SERVER"; display.innerText = serverUrl; } 
-            else { dot.classList.replace('status-online','status-offline'); text.innerText = "LOCAL"; display.innerText = "Local (Offline)"; }
-        }
-        async function initData() {
-            if(serverUrl) { try { const res = await fetch(`${serverUrl}/api/menu`); if(res.ok) { const data = await res.json(); if(Object.keys(data).length > 0) { menuData = data; renderMenu('all'); } } } catch(e) {} }
-            const loader = document.getElementById('loading-overlay');
-            if(loader) { loader.classList.add('opacity-0'); setTimeout(() => loader.classList.add('hidden'), 500); }
-        }
-        async function sendOrder(order) {
-            if(serverUrl) { try { const res = await fetch(`${serverUrl}/api/orders`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(order) }); if(!res.ok) throw new Error("Falha"); return true; } catch(e) { alert("Erro online. Salvo localmente."); localOrders.push(order); localStorage.setItem('del8LocalOrders', JSON.stringify(localOrders)); return false; } } 
-            else { localOrders.push(order); localStorage.setItem('del8LocalOrders', JSON.stringify(localOrders)); return true; }
-        }
-        async function fetchOrders() {
-            if(serverUrl) { try { const res = await fetch(`${serverUrl}/api/orders`); if(res.ok) return await res.json(); } catch(e) {} }
-            return localOrders;
-        }
-        async function syncMenu(newMenu) {
-            if(serverUrl) { try { await fetch(`${serverUrl}/api/menu`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(newMenu) }); } catch(e){} }
-            localStorage.setItem('del8MenuData', JSON.stringify(newMenu));
-        }
-        async function clearRemoteOrders() {
-            if(serverUrl) { try { await fetch(`${serverUrl}/api/orders/clear`, { method: 'POST' }); } catch(e){} }
-            localOrders = []; localStorage.setItem('del8LocalOrders', JSON.stringify(localOrders));
-        }
-        function startPolling() {
-            if(pollingInterval) clearInterval(pollingInterval);
-            pollingInterval = setInterval(() => {
-                const adminView = document.getElementById('admin-content-wrapper');
-                const ordersView = document.getElementById('admin-orders-view');
-                if(adminView && !adminView.classList.contains('hidden') && ordersView && !ordersView.classList.contains('hidden')) updateAdminStats();
-            }, 5000);
-        }
-        function stopPolling() { if(pollingInterval) clearInterval(pollingInterval); }
-
-        function renderMenu(f) {
-            const g = document.getElementById('menu-grid'); if(!g)return; g.innerHTML='';
-            let items = [];
-            if(f==='all') Object.values(menuData).forEach(x => items.push(...x)); else items = menuData[f]||[];
-            items.forEach(i => {
-                g.innerHTML += `<div class="card-gradient rounded-xl p-4 shadow-lg flex flex-col justify-between"><div><div class="flex justify-between items-start"><h3 class="font-bold text-lg text-white leading-tight">${i.nome}</h3><span class="text-xs font-mono text-gray-500 bg-black px-1 rounded border border-gray-800 font-bold">${i.id}</span></div><p class="text-gray-400 text-sm mt-2 line-clamp-2 font-sans">${i.desc}</p></div><div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-800"><button onclick="openItemModal('${i.id}')" class="bg-orange-600 hover:bg-orange-500 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg active:scale-95 transition-all"><svg class="icon text-xs" viewBox="0 0 24 24"><path d="M11 9h2V6h3V4h-3V1h-2v3H8v2h3v3zm-4 9c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2zm-9.83-3.25.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.86-7.01L19.42 4h-.01l-1.1 2-2.76 5H8.53l-.13-.27L6.16 6l-.95-2-.94-2H1v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.13 0-.25-.11-.25-.25z"></path></svg></button><span class="text-orange-500 font-bold text-xl price-tag">R$ ${parseFloat(i.preco).toFixed(2)}</span></div></div>`;
-            });
-        }
-        function openItemModal(id) {
-            let item = null;
-            for(const cat in menuData) { item = menuData[cat].find(x => x.id === id); if(item) break; }
-            if(!item) return;
-            currentModalItem = item; modalQtyVal = 1;
-            document.getElementById('modal-title').innerHTML = item.nome;
-            document.getElementById('modal-desc').innerText = item.desc;
-            document.getElementById('modal-price').innerText = `R$ ${parseFloat(item.preco).toFixed(2)}`;
-            document.getElementById('modal-qty').innerText = 1;
-            document.getElementById('modal-obs').value = '';
-            document.getElementById('modal-item').classList.remove('hidden');
-        }
-        function closeModal() { document.getElementById('modal-item').classList.add('hidden'); }
-        function changeModalQty(d) { modalQtyVal+=d; if(modalQtyVal<1)modalQtyVal=1; document.getElementById('modal-qty').innerText=modalQtyVal; document.getElementById('modal-price').innerText=`R$ ${(currentModalItem.preco*modalQtyVal).toFixed(2)}`; }
-        function confirmAddToCart() {
-            const btn = document.getElementById('btn-add-to-cart');
-            const originalContent = btn.innerHTML;
-            const originalClass = btn.className;
-            btn.innerHTML = '<svg class="icon animate-bounce mr-2" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> ADICIONADO!';
-            btn.className = "bg-green-600 text-white font-bold py-3 px-6 rounded-lg ml-4 flex-1 transition-all transform scale-105 shadow-lg flex justify-center items-center";
-            const obs = document.getElementById('modal-obs').value;
-            setTimeout(() => {
-                cart.push({...currentModalItem, qty: modalQtyVal, obs, uniqueId: Date.now()});
-                updateCartUI(); 
-                closeModal();
-                setTimeout(() => { btn.innerHTML = originalContent; btn.className = originalClass; }, 200);
-            }, 600);
-        }
-        async function checkout() {
-            const name = document.getElementById('customer-name').value.trim();
-            if(!name) return alert("Digite seu nome.");
-            if(cart.length===0) return alert("Carrinho vazio.");
-            const total = cart.reduce((a,b)=>a+(b.preco*b.qty),0);
-            const items = cart.map(i => { const d=document.createElement('div'); d.innerHTML=i.nome; return `${i.qty}x ${d.innerText}`; }).join(', ');
-            const order = { id: 0, date: new Date().toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), customer: name, items, total, status: 'Pendente' };
-            await sendOrder(order);
-            cart = []; document.getElementById('customer-name').value = ''; updateCartUI();
-            alert("Pedido enviado!"); switchTab('menu');
-        }
-        function toggleOrderStatus(id) {
-             let order = localOrders.find(o => o.id == id);
-             if (order) {
-                 order.status = order.status === 'Pronto' ? 'Pendente' : 'Pronto';
-                 localStorage.setItem('del8LocalOrders', JSON.stringify(localOrders));
-                 updateAdminStats();
-             }
-        }
-        async function updateAdminStats() {
-            const orders = await fetchOrders();
-            const pendingList = document.getElementById('pending-orders-list');
-            const completedList = document.getElementById('completed-orders-list');
-            if(!pendingList || !completedList) return;
-            pendingList.innerHTML = ''; completedList.innerHTML = '';
-            document.getElementById('stat-orders').innerText = orders.length;
-            document.getElementById('stat-revenue').innerText = `R$ ${orders.reduce((a,b)=>a+b.total,0).toFixed(2)}`;
-            if(orders.length === 0) { pendingList.innerHTML = '<p class="text-center text-gray-600 mt-4 text-xs">Sem pedidos pendentes</p>'; return; }
-            const sortedOrders = orders.slice().reverse();
-            sortedOrders.forEach(o => {
-                const isReady = o.status === 'Pronto';
-                const statusColor = isReady ? 'border-green-500/50 bg-green-900/10 opacity-75' : 'border-orange-500/30 bg-gray-900 shadow-lg';
-                const toggleBtn = isReady ? `<button onclick="toggleOrderStatus('${o.id}')" class="text-gray-500 hover:text-orange-500 transition-colors" title="Marcar como Pendente"><svg class="icon text-xl" viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button>` : `<button onclick="toggleOrderStatus('${o.id}')" class="bg-green-600 hover:bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition transform active:scale-95" title="Marcar como Pronto"><svg class="icon text-sm" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></button>`;
-                const html = `<div class="p-3 rounded border ${statusColor} text-sm mb-2 transition-all draggable" draggable="true" ondragstart="drag(event, '${o.id}')" id="order-card-${o.id}"><div class="flex items-start gap-3"><div class="pt-1"><input type="checkbox" onchange="toggleSelection()" value="${o.id}" class="order-checkbox w-5 h-5 accent-orange-500 bg-black border-gray-600 rounded cursor-pointer"></div><div class="flex-1"><div class="flex justify-between items-center mb-1"><span class="font-bold text-white">#${o.id || '?'} - ${o.customer}</span><div class="flex items-center gap-2"><span class="text-orange-500 font-bold">R$ ${parseFloat(o.total).toFixed(2)}</span>${toggleBtn}</div></div><p class="text-gray-400 text-xs">${o.date} ${o.time}</p><p class="text-gray-300 text-xs border-t border-gray-800 pt-2 mt-2 font-sans leading-relaxed">${o.items}</p></div></div></div>`;
-                if (isReady) { completedList.innerHTML += html; } else { pendingList.innerHTML += html; }
-            });
-            toggleSelection();
-        }
-        function renderAdminMenu() {
-            const l = document.getElementById('admin-menu-list'); if(!l)return; l.innerHTML='';
-            Object.entries(menuData).forEach(([cat, items]) => {
-                l.innerHTML += `<div class="text-orange-500 font-bold text-xs uppercase mt-4 border-b border-gray-800">${cat}</div>`;
-                items.forEach((i, idx) => {
-                    const tmp = document.createElement("div"); tmp.innerHTML=i.nome;
-                    l.innerHTML += `<div class="bg-gray-900 p-3 rounded border border-gray-800 flex justify-between items-center mt-2"><div class="flex-1"><span class="text-xs bg-black text-gray-500 px-1">${i.id}</span> <span class="font-bold text-white text-sm">${tmp.innerText}</span><p class="text-xs text-gray-500 truncate">${i.desc}</p></div><div class="flex gap-2"><button onclick="openMenuEditModal('${cat}',${idx})" class="text-blue-400">✎</button><button onclick="deleteMenuItem('${cat}',${idx})" class="text-red-400">🗑</button></div></div>`;
-                });
-            });
-        }
-        function toggleSelection(){const btn=document.getElementById('btn-delete-selected'); if(!btn)return; const c=document.querySelectorAll('.order-checkbox:checked').length; btn.classList.toggle('hidden', c===0); if(c>0){const counter=document.getElementById('delete-count'); if(counter)counter.innerText=c;}}
-        function showToast(m){const t=document.getElementById('toast'); document.getElementById('toast-msg').innerText=m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),2000);}
-        function filterCategory(c) { document.querySelectorAll('.cat-btn').forEach(b => { const m = (c==='all'&&b.innerText==='Todos')||(c!=='all'&&b.innerText.includes(c.split(' ')[0])); b.classList.toggle('bg-orange-600',m); b.classList.toggle('text-white',m); b.classList.toggle('bg-black',!m); }); renderMenu(c); }
-        function switchTab(t) { ['menu','cart','admin'].forEach(v=>document.getElementById(`view-${v}`).classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); const nm = document.getElementById('nav-menu'); const nc = document.getElementById('nav-cart'); if(nm) nm.classList.toggle('text-orange-500', t==='menu'); if(nc) nc.classList.toggle('text-orange-500', t==='cart'); window.scrollTo(0,0); if(t==='admin' && localStorage.getItem('isAdminLoggedIn')==='true'){document.getElementById('admin-login').classList.add('hidden');document.getElementById('admin-content-wrapper').classList.remove('hidden');switchAdminView('orders');} }
-        function checkAdmin(){if(document.getElementById('admin-pass').value==='del8admin'){localStorage.setItem('isAdminLoggedIn','true'); document.getElementById('admin-login').classList.add('hidden'); document.getElementById('admin-content-wrapper').classList.remove('hidden'); switchAdminView('orders');}else document.getElementById('login-error').classList.remove('hidden');}
-        function logoutAdmin(){localStorage.removeItem('isAdminLoggedIn'); document.getElementById('admin-content-wrapper').classList.add('hidden'); document.getElementById('admin-login').classList.remove('hidden');}
-        function switchAdminView(v){document.getElementById('admin-orders-view').classList.toggle('hidden',v!=='orders'); document.getElementById('admin-menu-view').classList.toggle('hidden',v!=='menu'); document.getElementById('btn-admin-orders').classList.toggle('bg-orange-600',v==='orders'); document.getElementById('btn-admin-menu').classList.toggle('bg-orange-600',v==='menu'); if(v==='orders') updateAdminStats(); else renderAdminMenu();}
-        function openMenuEditModal(c,i){document.getElementById('modal-menu-edit').classList.remove('hidden'); if(c){const it=menuData[c][i]; document.getElementById('edit-cat').value=c; document.getElementById('edit-name').value=it.nome; document.getElementById('edit-desc').value=it.desc; document.getElementById('edit-price').value=it.preco; document.getElementById('edit-original-cat').value=c; document.getElementById('edit-index').value=i; document.getElementById('menu-edit-title').innerText='Editar';}else{document.getElementById('edit-index').value=''; document.getElementById('menu-edit-title').innerText='Novo'; document.getElementById('edit-name').value=''; document.getElementById('edit-desc').value=''; document.getElementById('edit-price').value='';}}
-        function closeMenuEditModal(){document.getElementById('modal-menu-edit').classList.add('hidden');}
-        function deleteSelected(){if(!confirm('Apagar selecionados?'))return; const ids=Array.from(document.querySelectorAll('.order-checkbox:checked')).map(c=>parseInt(c.value)); if(serverUrl) { /* Implement server delete logic */ } else { localOrders=localOrders.filter(o=>!ids.includes(o.id)); localStorage.setItem('del8LocalOrders',JSON.stringify(localOrders)); updateAdminStats(); } }
-        function updateCartUI() {
-            const c = document.getElementById('cart-items-container'), f = document.getElementById('cart-footer');
-            if(!c) return;
-            if(cart.length===0) { c.innerHTML='<div class="text-center text-gray-500 py-10">Carrinho vazio</div>'; f.classList.add('hidden'); document.getElementById('btn-analyze-cart').classList.add('hidden'); document.getElementById('btn-diet-excuse').classList.add('hidden'); }
-            else { 
-                document.getElementById('btn-analyze-cart').classList.remove('hidden'); document.getElementById('btn-diet-excuse').classList.remove('hidden');
-                f.classList.remove('hidden'); c.innerHTML=''; let t=0; 
-                cart.forEach((i,x)=>{
-                    t+=i.preco*i.qty; 
-                    c.innerHTML+=`<div class="bg-gray-900 rounded p-2 flex justify-between items-center mb-2"><div class="text-sm text-white"><span class="text-orange-500 font-bold">${i.qty}x</span> ${i.nome}</div><button onclick="removeFromCart(${x})" class="text-red-500">✕</button></div>`;
-                }); 
-                document.getElementById('cart-subtotal').innerText=`R$ ${t.toFixed(2)}`; document.getElementById('cart-total').innerText=`R$ ${t.toFixed(2)}`; 
-            }
-            const q = cart.reduce((a,b)=>a+b.qty,0); 
-            document.querySelectorAll('#header-cart-count, #nav-cart-badge').forEach(e=>{e.innerText=q; e.classList.toggle('hidden',q===0)});
-        }
-        function removeFromCart(i) { cart.splice(i,1); updateCartUI(); }
-
-        // AI
-        const apiKey = ""; 
-        async function callGemini(p, s) {
-            try { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:p}]}], systemInstruction:{parts:[{text:s}]}}) }); const d = await r.json(); return d.candidates?.[0]?.content?.parts?.[0]?.text || "Erro IA"; } catch(e) { return "IA offline"; }
-        }
-        function closeCartAi() { document.getElementById('cart-ai-response').classList.add('hidden'); }
-        async function analyzeCart(){if(cart.length===0)return; const b=document.getElementById('btn-analyze-cart'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await callGemini("Analise", `Garçom sarcástico DEL 8. Pedido: ${cart.map(i=>i.nome).join(', ')}. Comente curto.`); document.getElementById('cart-ai-text').innerText=r; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
-        async function generateDietExcuse(){if(cart.length===0)return; const b=document.getElementById('btn-diet-excuse'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await callGemini("Desculpa", `Advogado engraçado. Cliente comeu: ${cart.map(i=>i.nome).join(', ')}. Desculpa p/ nutricionista. Curta.`); document.getElementById('cart-ai-text').innerText=`🤥 "${r}"`; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
-        async function generateSlogan(){const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await callGemini("Slogan", "Slogan curto/moderno/neon DEL 8."); alert(`📢 "${r.replace(/["']/g,"")}"`); b.innerText=h; b.disabled=false;}
-        async function generateAIDescription(){const n=document.getElementById('edit-name').value; if(!n)return alert('Nome?'); const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await callGemini("Descrição", `Mkt DEL 8. Descrição curta para: ${n}`); document.getElementById('edit-desc').value=r.replace(/["']/g,""); b.innerText=h; b.disabled=false;}
-        
-        // Touch Drag & Drop Polyfill for Mobile
-        window.drag = function(ev, id) {
-            ev.dataTransfer.setData("text/plain", id);
-            ev.target.classList.add('dragging');
-        }
-        window.allowDrop = function(ev) {
-            ev.preventDefault();
-            ev.currentTarget.classList.add('drag-over');
-        }
-        window.leaveDrop = function(ev) {
-            ev.currentTarget.classList.remove('drag-over');
-        }
-        window.drop = function(ev, status) {
-            ev.preventDefault();
-            ev.currentTarget.classList.remove('drag-over');
-            const id = ev.dataTransfer.getData("text/plain");
-            const draggedElement = document.getElementById(`order-card-${id}`);
-            if(draggedElement) draggedElement.classList.remove('dragging');
-            
-            // Logic for drop update
-            let ordersToSearch = serverUrl ? window.orders : localOrders;
-            let order = ordersToSearch.find(o => o.id == id);
-            
-            if (order && order.status !== status) {
-                 order.status = status;
-                 if(!serverUrl) {
-                     localStorage.setItem('del8LocalOrders', JSON.stringify(localOrders));
-                 }
-                 // In a real server scenario, we would POST the update here.
-                 // For local demo, we just update state and refresh.
-                 updateAdminStats();
-            }
-        }
-
-        // Attach globals
-        window.saveServerConfig = saveServerConfig;
-        window.openItemModal = openItemModal;
-        window.closeModal = closeModal;
-        window.changeModalQty = changeModalQty;
-        window.confirmAddToCart = confirmAddToCart;
-        window.removeFromCart = removeFromCart;
-        window.checkout = checkout;
-        window.filterCategory = filterCategory;
-        window.switchTab = switchTab;
-        window.checkAdmin = checkAdmin;
-        window.logoutAdmin = logoutAdmin;
-        window.switchAdminView = switchAdminView;
-        window.updateAdminStats = updateAdminStats;
-        window.openMenuEditModal = openMenuEditModal;
-        window.closeMenuEditModal = closeMenuEditModal;
-        window.saveMenuItem = saveMenuItem;
-        window.deleteMenuItem = deleteMenuItem;
-        window.toggleSelection = toggleSelection;
-        window.deleteSelected = deleteSelected;
-        window.clearAllHistory = clearAllHistory;
-        window.toggleOrderStatus = toggleOrderStatus;
-        window.analyzeCart = analyzeCart;
-        window.generateDietExcuse = generateDietExcuse;
-        window.closeCartAi = closeCartAi;
-        window.generateSlogan = generateSlogan;
-        window.generateAIDescription = generateAIDescription;
-    </script>
-</body>
-</html>
+export default App;

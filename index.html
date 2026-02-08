@@ -31,10 +31,12 @@
         #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; pointer-events: none; }
         .history-table th { text-align: left; padding: 8px; border-bottom: 1px solid #333; color: #f97316; font-family: 'Righteous', cursive; }
         .history-table td { padding: 8px; border-bottom: 1px solid #1f1f1f; font-size: 0.85rem; }
+        .history-table tr:last-child td { border-bottom: none; }
     </style>
 </head>
 <body class="safe-bottom">
 
+    <!-- Loading Screen -->
     <div id="loading-overlay">
         <div class="text-center">
             <svg class="icon text-orange-500 text-6xl animate-pulse mb-4" viewBox="0 0 24 24"><path d="M20 10C20 5 4 5 4 10H20ZM3 11H21V14H3V11ZM4 15H20V18C20 20 4 20 4 18V15Z"></path></svg>
@@ -62,9 +64,10 @@
     </header>
 
     <main class="mt-16 max-w-4xl mx-auto p-4 relative">
+        <!-- MENU -->
         <div id="view-menu" class="animate-fade-in pb-16">
             <div class="flex space-x-4 overflow-x-auto hide-scroll pb-4 mb-2 sticky top-16 bg-black z-40 py-2 border-b border-gray-900/50">
-                <button onclick="window.filterCategory('all')" data-cat="all" class="cat-btn bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Todos</button>
+                <button onclick="window.filterCategory('all')" data-cat="all" class="cat-btn bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap active-cat">Todos</button>
                 <button onclick="window.filterCategory('BURGER REGRETS')" data-cat="BURGER REGRETS" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Burgers</button>
                 <button onclick="window.filterCategory('ACOMPANHAMENTOS')" data-cat="ACOMPANHAMENTOS" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Acompanhamentos</button>
                 <button onclick="window.filterCategory('BEBIDAS')" data-cat="BEBIDAS" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Bebidas</button>
@@ -72,6 +75,7 @@
             <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </div>
 
+        <!-- CARRINHO -->
         <div id="view-cart" class="hidden animate-fade-in h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar p-1">
             <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
                 <h2 class="text-2xl font-bold text-white">Seu Carrinho</h2>
@@ -100,7 +104,7 @@
                 <div class="text-orange-500 text-5xl mb-4"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z"></path></svg></div>
                 <h3 class="text-xl font-bold mb-4 text-white">Área Restrita</h3>
                 <input type="password" id="admin-pass" class="w-full bg-black border border-gray-700 rounded p-3 mb-4 text-center text-white focus:border-orange-500" placeholder="Digite a Senha">
-                <button onclick="window.checkAdmin()" class="w-full bg-orange-600 text-white font-bold py-3 rounded hover:bg-orange-500 transition">ENTRAR</button>
+                <button onclick="window.checkAdmin()" class="w-full bg-orange-600 text-white font-bold py-3 rounded hover:bg-orange-500">ENTRAR</button>
                 <p id="login-error" class="text-red-500 text-xs mt-3 hidden">Senha incorreta!</p>
                 <button onclick="window.switchTab('menu')" class="mt-4 text-xs text-gray-500 hover:text-white underline">Voltar ao Menu</button>
             </div>
@@ -162,9 +166,16 @@
                         </div>
                         <p class="text-[10px] text-gray-500 mt-1">*Selecione um arquivo .csv exportado anteriormente para ver os gráficos.</p>
                     </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800"><h4 class="text-orange-500 font-bold text-xs uppercase mb-3">Produtos Mais Vendidos (Qtd)</h4><canvas id="productsChart"></canvas></div>
-                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800"><h4 class="text-green-500 font-bold text-xs uppercase mb-3">Faturamento Estimado</h4><canvas id="revenueChart"></canvas></div>
+                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                            <h4 class="text-orange-500 font-bold text-xs uppercase mb-3">Produtos Mais Vendidos (Qtd)</h4>
+                            <canvas id="productsChart"></canvas>
+                        </div>
+                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                            <h4 class="text-green-500 font-bold text-xs uppercase mb-3">Faturamento Estimado</h4>
+                            <canvas id="revenueChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -205,20 +216,45 @@
                 <table class="w-full history-table text-left">
                     <thead class="bg-black text-xs uppercase sticky top-0">
                         <tr>
-                            <th class="pl-2">Data</th>
-                            <th class="text-center" title="Quantidade de Pedidos">Peds</th>
-                            <th class="text-center text-orange-500" title="Unidades de Produtos">Prods</th>
+                            <th class="pl-2"></th> <!-- Checkbox column -->
+                            <th>Data</th>
+                            <th class="text-center">Peds</th>
+                            <th class="text-center text-orange-500">Prods</th>
                             <th class="text-right pr-2">Total</th>
+                            <th class="text-right pr-2">Editar</th>
                         </tr>
                     </thead>
                     <tbody id="daily-history-body" class="text-gray-300"></tbody>
                 </table>
             </div>
+
             <div class="mt-4 pt-4 border-t border-gray-800 flex gap-3">
+                 <!-- Botão Apagar Selecionados -->
+                <button onclick="window.deleteSelectedHistory()" class="flex-1 bg-red-900/60 hover:bg-red-800 text-red-100 border border-red-800 py-2 rounded font-bold text-xs">Apagar Selecionados</button>
                 <button onclick="window.exportHistorySummary()" class="flex-1 bg-blue-900/50 hover:bg-blue-800 text-blue-200 border border-blue-800 py-2 rounded font-bold text-xs">Exportar Resumo</button>
                 <button onclick="window.closeHistoryModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 py-2 rounded font-bold text-xs">Fechar</button>
             </div>
         </div>
+    </div>
+
+    <!-- NEW MODAL: History Edit -->
+    <div id="modal-history-edit" class="fixed inset-0 bg-black/95 z-[95] hidden flex items-center justify-center p-4 backdrop-blur-md">
+      <div class="bg-gray-900 rounded-xl max-w-md w-full p-6 relative border border-gray-700 shadow-2xl">
+        <button onclick="window.closeHistoryEditModal()" class="absolute top-3 right-3 text-gray-500 text-xl hover:text-white transition">&times;</button>
+        <h3 class="text-xl font-bold text-white mb-4">Editar Resumo do Dia</h3>
+        <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Data</label>
+        <input id="hist-edit-date" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm mb-3" />
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Peds</label><input id="hist-edit-peds" type="number" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm" /></div>
+          <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Prods</label><input id="hist-edit-prods" type="number" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm" /></div>
+          <div><label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Total</label><input id="hist-edit-total" type="number" step="0.01" class="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm" /></div>
+        </div>
+        <input type="hidden" id="hist-edit-original-date" />
+        <div class="flex gap-2 mt-4">
+          <button onclick="window.saveHistoryEdit()" class="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg">Salvar</button>
+          <button onclick="window.removeHistoryEdit()" class="bg-red-900/60 hover:bg-red-800 text-red-100 font-bold py-3 px-4 rounded-lg">Apagar</button>
+        </div>
+      </div>
     </div>
 
     <div id="modal-menu-edit" class="fixed inset-0 bg-black/95 z-[80] hidden flex items-center justify-center p-4 backdrop-blur-md">
@@ -253,6 +289,7 @@
         window.archivedOrders = JSON.parse(localStorage.getItem('del8ArchivedOrders')) || [];
         window.currentModalItem = null;
         window.modalQtyVal = 1;
+        window.dailyOverrides = JSON.parse(localStorage.getItem("del8DailyOverrides")) || {};
 
         const DEFAULT_MENU = {
             "BURGER REGRETS": [
@@ -666,14 +703,27 @@
             window.renderAdminMenu(); window.renderMenu('all'); window.closeMenuEditModal();
         }
         window.deleteMenuItem = function(c,i) { if(confirm("Apagar?")) { window.menuData[c].splice(i,1); localStorage.setItem('del8MenuData', JSON.stringify(window.menuData)); window.renderAdminMenu(); window.renderMenu('all'); } }
-        window.closeRegister = function() {
-            let currentTotal = 0;
-            window.localOrders.forEach(o => currentTotal += o.total);
-            const dailyValue = `R$ ${currentTotal.toFixed(2)}`;
-            if(confirm(`FECHAR CAIXA DO DIA?\n\nFaturamento do Turno: ${dailyValue}\n\nDeseja zerar a lista de pedidos para amanhã?`)) {
+        window.closeRegister = async function() {
+            // recarrega do storage para garantir
+            window.localOrders = JSON.parse(localStorage.getItem('del8LocalOrders')) || [];
+            window.archivedOrders = JSON.parse(localStorage.getItem('del8ArchivedOrders')) || [];
+
+            const dailyEl = document.getElementById('stat-daily');
+            const dailyValue = dailyEl ? dailyEl.innerText : 'R$ 0,00';
+
+            if(confirm(`FECHAR CAIXA DO DIA?\n\nFaturamento (histórico fechado) Hoje: ${dailyValue}\n\nDeseja zerar a lista de pedidos para amanhã?`)) {
+
+                // move caixa atual -> histórico
                 window.archivedOrders = [...window.archivedOrders, ...window.localOrders];
                 localStorage.setItem('del8ArchivedOrders', JSON.stringify(window.archivedOrders));
-                window.internalClearOrders();
+
+                // zera caixa atual (localOrders)
+                await window.internalClearOrders();
+
+                // atualiza tela na hora
+                await window.updateAdminStats();
+
+                alert("Caixa fechado com sucesso!");
             }
         }
         window.openHistoryModal = function() {
@@ -681,15 +731,21 @@
             const tbody = document.getElementById('daily-history-body');
             modal.classList.remove('hidden');
             tbody.innerHTML = '';
-            const all = [...window.archivedOrders, ...window.localOrders];
-            if(all.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-4">Sem dados.</td></tr>'; return; }
             
+            // Recarrega para garantir
+            const all = [...window.archivedOrders, ...window.localOrders];
+            
+            if(all.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-4">Sem dados.</td></tr>'; return; }
+            
+            // Group by Date
             const groups = {};
             all.forEach(o => {
                 const d = o.date;
                 if(!groups[d]) groups[d] = { count: 0, total: 0, items: 0 };
                 groups[d].count++;
                 groups[d].total += o.total;
+
+                // Contagem de Unidades de Produtos (Parseia a string "2x Burger, 1x Coca")
                 if(o.items) {
                     const parts = o.items.split(', ');
                     parts.forEach(p => {
@@ -700,12 +756,37 @@
                     });
                 }
             });
+
+            // Ordena por data (mais recente primeiro)
             Object.keys(groups).sort((a,b) => {
                 const da = a.split('/').reverse().join('');
                 const db = b.split('/').reverse().join('');
                 return db.localeCompare(da);
             }).forEach(date => {
-                tbody.innerHTML += `<tr><td class="pl-2">${date}</td><td class="text-center text-gray-400">${groups[date].count}</td><td class="text-center font-bold text-orange-400">${groups[date].items}</td><td class="text-right font-bold text-green-500 pr-2">R$ ${groups[date].total.toFixed(2)}</td></tr>`;
+
+                const base = groups[date];
+                const ov = window.dailyOverrides?.[date];
+
+                const row = {
+                    date: ov?.date || date,
+                    count: (ov?.count ?? base.count),
+                    items: (ov?.items ?? base.items),
+                    total: (ov?.total ?? base.total),
+                };
+
+                tbody.innerHTML += `
+                    <tr>
+                    <td class="pl-2"><input type="checkbox" class="hist-checkbox accent-orange-600 w-4 h-4 cursor-pointer" value="${date}"></td>
+                    <td>${row.date}</td>
+                    <td class="text-center text-gray-400">${row.count}</td>
+                    <td class="text-center font-bold text-orange-400">${row.items}</td>
+                    <td class="text-right font-bold text-green-500 pr-2">R$ ${Number(row.total).toFixed(2)}</td>
+                    <td class="text-right pr-2">
+                        <button class="text-blue-400 hover:text-blue-300 font-bold"
+                        onclick='window.openHistoryEditModal("${date}", ${JSON.stringify(base).replace(/'/g, "\\'")})'>✎</button>
+                    </td>
+                    </tr>
+                `;
             });
         }
         window.closeHistoryModal = function() { document.getElementById('modal-history').classList.add('hidden'); }
@@ -720,18 +801,11 @@
                 groups[d].total += o.total;
                 if(o.items) {
                     const parts = o.items.split(', ');
-                    parts.forEach(p => {
-                        const match = p.match(/^(\d+)x/);
-                        if(match && match[1]) {
-                            groups[d].items += parseInt(match[1]);
-                        }
-                    });
+                    parts.forEach(p => { const match = p.match(/^(\d+)x/); if(match && match[1]) groups[d].items += parseInt(match[1]); });
                 }
             });
             let csv = "Data,Qtd Pedidos,Qtd Produtos,Total Faturado\n";
-            Object.keys(groups).sort((a,b) => b.localeCompare(a)).forEach(d => {
-                csv += `${d},${groups[d].count},${groups[d].items},${groups[d].total.toFixed(2)}\n`;
-            });
+            Object.keys(groups).sort((a,b) => b.localeCompare(a)).forEach(d => { csv += `${d},${groups[d].count},${groups[d].items},${groups[d].total.toFixed(2)}\n`; });
             const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8,"+csv); link.download = "resumo_producao_diario.csv"; link.click();
         }
         window.exportToCSV = function() {
@@ -744,21 +818,10 @@
         window.deleteSelected = function(){if(!confirm('Apagar selecionados?'))return; const ids=Array.from(document.querySelectorAll('.order-checkbox:checked')).map(c=>parseInt(c.value)); if(window.serverUrl) { } else { window.localOrders=window.localOrders.filter(o=>!ids.includes(o.id)); localStorage.setItem('del8LocalOrders',JSON.stringify(window.localOrders)); window.updateAdminStats(); } }
         window.toggleSelection = function(){const btn=document.getElementById('btn-delete-selected'); if(!btn)return; const c=document.querySelectorAll('.order-checkbox:checked').length; btn.classList.toggle('hidden', c===0); if(c>0){const counter=document.getElementById('delete-count'); if(counter)counter.innerText=c;}}
         window.clearAllHistoryManual = function() { if(confirm("Deseja mesmo limpar todo o histórico atual?")) { window.internalClearOrders(); } }
-        window.renderAdminMenu = function() {
-            const l = document.getElementById('admin-menu-list'); if(!l)return; l.innerHTML='';
-            Object.entries(window.menuData).forEach(([cat, items]) => {
-                l.innerHTML += `<div class="text-orange-500 font-bold text-xs uppercase mt-4 border-b border-gray-800">${cat}</div>`;
-                items.forEach((i, idx) => {
-                    const tmp = document.createElement("div"); tmp.innerHTML=i.nome;
-                    l.innerHTML += `<div class="bg-gray-900 p-3 rounded border border-gray-800 flex justify-between items-center mt-2"><div class="flex-1"><span class="text-xs bg-black text-gray-500 px-1">${i.id}</span> <span class="font-bold text-white text-sm">${tmp.innerText}</span><p class="text-xs text-gray-500 truncate">${i.desc}</p></div><div class="flex gap-2"><button onclick="window.openMenuEditModal('${cat}',${idx})" class="text-blue-400">✎</button><button onclick="window.deleteMenuItem('${cat}',${idx})" class="text-red-400">🗑</button></div></div>`;
-                });
-            });
-        }
-        window.closeCartAi = function() { document.getElementById('cart-ai-response').classList.add('hidden'); }
-        window.analyzeCart = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-analyze-cart'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await callGemini("Analise", `Garçom sarcástico DEL 8. Pedido: ${window.cart.map(i=>i.nome).join(', ')}. Comente curto.`); document.getElementById('cart-ai-text').innerText=r; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
-        window.generateDietExcuse = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-diet-excuse'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await callGemini("Desculpa", `Advogado engraçado. Cliente comeu: ${window.cart.map(i=>i.nome).join(', ')}. Desculpa p/ nutricionista. Curta.`); document.getElementById('cart-ai-text').innerText=`🤥 "${r}"`; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
-        window.generateSlogan = async function(){const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await callGemini("Slogan", "Slogan curto/moderno/neon DEL 8."); alert(`📢 "${r.replace(/["']/g,"")}"`); b.innerText=h; b.disabled=false;}
-        window.generateAIDescription = async function(){const n=document.getElementById('edit-name').value; if(!n)return alert('Nome?'); const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await callGemini("Descrição", `Mkt DEL 8. Descrição curta para: ${n}`); document.getElementById('edit-desc').value=r.replace(/["']/g,""); b.innerText=h; b.disabled=false;}
+        window.analyzeCart = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-analyze-cart'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await window.callGemini("Analise", `Garçom sarcástico DEL 8. Pedido: ${window.cart.map(i=>i.nome).join(', ')}. Comente curto.`); document.getElementById('cart-ai-text').innerText=r; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
+        window.generateDietExcuse = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-diet-excuse'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await window.callGemini("Desculpa", `Advogado engraçado. Cliente comeu: ${window.cart.map(i=>i.nome).join(', ')}. Desculpa p/ nutricionista. Curta.`); document.getElementById('cart-ai-text').innerText=`🤥 "${r}"`; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
+        window.generateSlogan = async function(){const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await window.callGemini("Slogan", "Slogan curto/moderno/neon DEL 8."); alert(`📢 "${r.replace(/["']/g,"")}"`); b.innerText=h; b.disabled=false;}
+        window.generateAIDescription = async function(){const n=document.getElementById('edit-name').value; if(!n)return alert('Nome?'); const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await window.callGemini("Descrição", `Mkt DEL 8. Descrição curta para: ${n}`); document.getElementById('edit-desc').value=r.replace(/["']/g,""); b.innerText=h; b.disabled=false;}
         window.askChefAI = async function() {
             const userInput = document.getElementById('ai-chef-input').value.trim();
             if (!userInput) return;
@@ -767,13 +830,16 @@
             btn.disabled = true; btn.innerHTML = '<svg class="icon animate-spin" viewBox="0 0 24 24"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"></path></svg> Pensando...';
             const menuContext = JSON.stringify(window.menuData); 
             const systemPrompt = `Você é a "Chef IA" da hamburgueria "DEL 8". O menu: ${menuContext}. Sugira 1-2 itens com base em: "${userInput}". Curto e divertido.`;
-            const response = await callGemini(userInput, systemPrompt);
+            const response = await window.callGemini(userInput, systemPrompt);
             resultDiv.innerHTML = marked.parse(response); resultDiv.classList.remove('hidden');
             btn.disabled = false; btn.innerHTML = '<span>PEDIR OUTRA SUGESTÃO</span>';
         }
         window.openAiChefModal = function(){ document.getElementById('modal-ai-chef').classList.remove('hidden'); document.getElementById('ai-chef-result').classList.add('hidden'); document.getElementById('ai-chef-input').value=''; }
         window.closeAiChefModal = function(){ document.getElementById('modal-ai-chef').classList.add('hidden'); }
+        window.closeCartAi = function() { document.getElementById('cart-ai-response').classList.add('hidden'); }
+        window.callGemini = async function(p, s) { try { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:p}]}], systemInstruction:{parts:[{text:s}]}}) }); const d = await r.json(); return d.candidates?.[0]?.content?.parts?.[0]?.text || "Erro IA"; } catch(e) { return "IA offline"; } }
 
+        // Drag Polyfill
         window.drag = function(ev, id) { ev.dataTransfer.setData("text/plain", id); ev.target.classList.add('dragging'); }
         window.allowDrop = function(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
         window.leaveDrop = function(ev) { ev.currentTarget.classList.remove('drag-over'); }

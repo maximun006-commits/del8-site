@@ -4,28 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
-    <meta name="application-name" content="DEL 8">
-    
     <title>DEL 8 - Sistema Local</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Chart.js para Gráficos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #000000; color: #e5e7eb; overscroll-behavior-y: none; user-select: none; }
         h1, h2, h3, h4, .brand-font, .cat-btn, .price-tag { font-family: 'Righteous', cursive; letter-spacing: 0.05em; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         .card-gradient { background: linear-gradient(145deg, #111111, #0a0a0a); border: 1px solid #333; }
-        .ai-gradient { background: linear-gradient(135deg, #f97316, #ef4444); }
         .active-tab { color: #f97316; border-bottom: 2px solid #f97316; }
         .safe-bottom { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
@@ -39,10 +29,8 @@
         .draggable { cursor: grab; touch-action: none; }
         .dragging { opacity: 0.5; background-color: #1f1f1f; }
         #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; pointer-events: none; }
-        /* Table Styles for History */
         .history-table th { text-align: left; padding: 8px; border-bottom: 1px solid #333; color: #f97316; font-family: 'Righteous', cursive; }
         .history-table td { padding: 8px; border-bottom: 1px solid #1f1f1f; font-size: 0.85rem; }
-        .history-table tr:last-child td { border-bottom: none; }
     </style>
 </head>
 <body class="safe-bottom">
@@ -74,18 +62,16 @@
     </header>
 
     <main class="mt-16 max-w-4xl mx-auto p-4 relative">
-        <!-- MENU -->
         <div id="view-menu" class="animate-fade-in pb-16">
             <div class="flex space-x-4 overflow-x-auto hide-scroll pb-4 mb-2 sticky top-16 bg-black z-40 py-2 border-b border-gray-900/50">
-                <button onclick="window.filterCategory('all')" class="cat-btn bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap active-cat">Todos</button>
-                <button onclick="window.filterCategory('BURGER REGRETS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Burgers</button>
-                <button onclick="window.filterCategory('ACOMPANHAMENTOS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Acompanhamentos</button>
-                <button onclick="window.filterCategory('BEBIDAS')" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Bebidas</button>
+                <button onclick="window.filterCategory('all')" data-cat="all" class="cat-btn bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Todos</button>
+                <button onclick="window.filterCategory('BURGER REGRETS')" data-cat="BURGER REGRETS" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Burgers</button>
+                <button onclick="window.filterCategory('ACOMPANHAMENTOS')" data-cat="ACOMPANHAMENTOS" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Acompanhamentos</button>
+                <button onclick="window.filterCategory('BEBIDAS')" data-cat="BEBIDAS" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Bebidas</button>
             </div>
             <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </div>
 
-        <!-- CARRINHO -->
         <div id="view-cart" class="hidden animate-fade-in h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar p-1">
             <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
                 <h2 class="text-2xl font-bold text-white">Seu Carrinho</h2>
@@ -104,7 +90,7 @@
                 <div class="flex justify-between items-center mb-2 text-gray-400 text-sm"><span>Subtotal</span><span id="cart-subtotal" class="font-bold font-mono text-white">R$ 0,00</span></div>
                 <div class="flex justify-between items-center mb-4 text-white text-xl font-bold border-t border-gray-800 pt-2"><span>Total</span><span id="cart-total" class="text-orange-500">R$ 0,00</span></div>
                 <input type="text" id="customer-name" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-orange-500 font-sans mb-4" placeholder="Digite seu nome...">
-                <button onclick="window.checkout()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-lg flex justify-center items-center gap-2">FINALIZAR PEDIDO</button>
+                <button onclick="window.checkout()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-lg flex justify-center items-center gap-2 transform active:scale-95 transition-all">FINALIZAR PEDIDO</button>
             </div>
         </div>
 
@@ -114,7 +100,7 @@
                 <div class="text-orange-500 text-5xl mb-4"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z"></path></svg></div>
                 <h3 class="text-xl font-bold mb-4 text-white">Área Restrita</h3>
                 <input type="password" id="admin-pass" class="w-full bg-black border border-gray-700 rounded p-3 mb-4 text-center text-white focus:border-orange-500" placeholder="Digite a Senha">
-                <button onclick="window.checkAdmin()" class="w-full bg-orange-600 text-white font-bold py-3 rounded hover:bg-orange-500">ENTRAR</button>
+                <button onclick="window.checkAdmin()" class="w-full bg-orange-600 text-white font-bold py-3 rounded hover:bg-orange-500 transition">ENTRAR</button>
                 <p id="login-error" class="text-red-500 text-xs mt-3 hidden">Senha incorreta!</p>
                 <button onclick="window.switchTab('menu')" class="mt-4 text-xs text-gray-500 hover:text-white underline">Voltar ao Menu</button>
             </div>
@@ -134,13 +120,7 @@
                     </div>
                 </div>
                 
-                <!-- Abas Admin Atualizadas -->
-                <div class="flex gap-2 p-1 bg-gray-900 rounded-lg border border-gray-800 mb-4">
-                    <button onclick="window.switchAdminView('orders')" id="btn-admin-orders" class="flex-1 py-2 text-sm font-bold rounded bg-orange-600 text-white">PEDIDOS</button>
-                    <button onclick="window.switchAdminView('menu')" id="btn-admin-menu" class="flex-1 py-2 text-sm font-bold rounded text-gray-400">CARDÁPIO</button>
-                    <!-- NOVA ABA ANÁLISE -->
-                    <button onclick="window.switchAdminView('analysis')" id="btn-admin-analysis" class="flex-1 py-2 text-sm font-bold rounded text-gray-400 flex items-center justify-center gap-1"><svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg> ANÁLISE</button>
-                </div>
+                <div class="flex gap-2 p-1 bg-gray-900 rounded-lg border border-gray-800 mb-4"><button onclick="window.switchAdminView('orders')" id="btn-admin-orders" class="flex-1 py-2 text-sm font-bold rounded bg-orange-600 text-white">PEDIDOS</button><button onclick="window.switchAdminView('menu')" id="btn-admin-menu" class="flex-1 py-2 text-sm font-bold rounded text-gray-400">CARDÁPIO</button><button onclick="window.switchAdminView('analysis')" id="btn-admin-analysis" class="flex-1 py-2 text-sm font-bold rounded text-gray-400 flex items-center justify-center gap-1"><svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg> ANÁLISE</button></div>
 
                 <div id="admin-orders-view" class="flex-1 overflow-y-auto custom-scrollbar p-1">
                     <div class="grid grid-cols-2 gap-2 mb-6">
@@ -173,7 +153,6 @@
                     </div>
                 </div>
 
-                <!-- NOVA TELA DE ANÁLISE -->
                 <div id="admin-analysis-view" class="hidden flex-1 overflow-y-auto custom-scrollbar p-1 pb-20">
                     <div class="mb-4">
                         <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">Importar CSV para Análise</label>
@@ -183,20 +162,11 @@
                         </div>
                         <p class="text-[10px] text-gray-500 mt-1">*Selecione um arquivo .csv exportado anteriormente para ver os gráficos.</p>
                     </div>
-
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
-                            <h4 class="text-orange-500 font-bold text-xs uppercase mb-3">Produtos Mais Vendidos (Qtd)</h4>
-                            <canvas id="productsChart"></canvas>
-                        </div>
-                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
-                            <h4 class="text-green-500 font-bold text-xs uppercase mb-3">Faturamento Estimado por Produto</h4>
-                            <canvas id="revenueChart"></canvas>
-                        </div>
+                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800"><h4 class="text-orange-500 font-bold text-xs uppercase mb-3">Produtos Mais Vendidos (Qtd)</h4><canvas id="productsChart"></canvas></div>
+                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800"><h4 class="text-green-500 font-bold text-xs uppercase mb-3">Faturamento Estimado</h4><canvas id="revenueChart"></canvas></div>
                     </div>
                 </div>
-                <!-- FIM TELA ANÁLISE -->
-
             </div>
         </div>
     </main>
@@ -212,6 +182,11 @@
         <div class="bg-gray-900 rounded-xl max-w-md w-full p-5 relative border border-gray-800 shadow-2xl">
             <button onclick="window.closeModal()" class="absolute top-3 right-3 text-gray-500 text-xl hover:text-white transition">&times;</button>
             <h3 id="modal-title" class="text-2xl font-bold text-white mb-1">Nome</h3>
+            
+            <div id="modal-image-container" class="hidden mb-4 w-full h-48 bg-gray-900 rounded-lg flex items-center justify-center overflow-hidden border border-gray-700">
+                <img id="modal-item-img" src="" alt="Ingredientes" class="h-full object-contain">
+            </div>
+
             <p id="modal-desc" class="text-gray-400 text-sm mb-4 font-sans">Desc</p>
             <p id="modal-price" class="text-orange-500 font-bold text-2xl mb-4">R$ 0,00</p>
             <textarea id="modal-obs" class="w-full bg-black border border-gray-700 rounded p-2 text-white text-sm mb-4" rows="2" placeholder="Observações..."></textarea>
@@ -407,9 +382,24 @@
 
         // --- STANDARD UI ---
         window.renderMenu = function(f) {
+            // Safety check for menuData
+            if (!window.menuData || typeof window.menuData !== 'object') {
+                window.menuData = DEFAULT_MENU;
+            }
+
             const g = document.getElementById('menu-grid'); if(!g)return; g.innerHTML='';
             let items = [];
-            if(f==='all') Object.values(window.menuData).forEach(x => items.push(...x)); else items = window.menuData[f]||[];
+            if(f==='all') {
+                const values = Object.values(window.menuData);
+                if (values) {
+                     values.forEach(x => {
+                         if (Array.isArray(x)) items.push(...x);
+                     });
+                }
+            } else {
+                items = window.menuData[f]||[];
+            }
+            
             items.forEach(i => {
                 g.innerHTML += `<div class="card-gradient rounded-xl p-4 shadow-lg flex flex-col justify-between"><div><div class="flex justify-between items-start"><h3 class="font-bold text-lg text-white leading-tight">${i.nome}</h3><span class="text-xs font-mono text-gray-500 bg-black px-1 rounded border border-gray-800 font-bold">${i.id}</span></div><p class="text-gray-400 text-sm mt-2 line-clamp-2 font-sans">${i.desc}</p></div><div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-800"><button onclick="window.openItemModal('${i.id}')" class="bg-orange-600 hover:bg-orange-500 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg active:scale-95 transition-all"><svg class="icon text-xs" viewBox="0 0 24 24"><path d="M11 9h2V6h3V4h-3V1h-2v3H8v2h3v3zm-4 9c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2zm-9.83-3.25.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.86-7.01L19.42 4h-.01l-1.1 2-2.76 5H8.53l-.13-.27L6.16 6l-.95-2-.94-2H1v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.13 0-.25-.11-.25-.25z"></path></svg></button><span class="text-orange-500 font-bold text-xl price-tag">R$ ${parseFloat(i.preco).toFixed(2)}</span></div></div>`;
             });
@@ -428,14 +418,47 @@
         }
         window.openItemModal = function(id) {
             let item = null;
-            for(const cat in window.menuData) { item = window.menuData[cat].find(x => x.id === id); if(item) break; }
+            if (!window.menuData) window.menuData = DEFAULT_MENU;
+            
+            for(const cat in window.menuData) { 
+                const list = window.menuData[cat];
+                if (list) {
+                    const found = list.find(x => x.id === id); 
+                    if(found) { item = found; break; } 
+                }
+            }
             if(!item) return;
+            
             window.currentModalItem = item; window.modalQtyVal = 1;
             document.getElementById('modal-title').innerHTML = item.nome;
             document.getElementById('modal-desc').innerText = item.desc;
             document.getElementById('modal-price').innerText = `R$ ${parseFloat(item.preco).toFixed(2)}`;
             document.getElementById('modal-qty').innerText = 1;
             document.getElementById('modal-obs').value = '';
+            
+            // LOGIC FOR IMAGE PLACEHOLDER - UPDATED FOR ALL BR items
+            const imgContainer = document.getElementById('modal-image-container');
+            const img = document.getElementById('modal-item-img');
+            
+            // Placeholder images map - You can update these URLs with real images later
+            const burgerImages = {
+                "BR1": "https://placehold.co/600x400/111/f97316?text=Montagem+BR1%0A(P%C3%A3o-Carne-Queijo)",
+                "BR2": "https://placehold.co/600x400/111/f97316?text=Montagem+BR2%0A(P%C3%A3o-Carne-Cheddar-Picles)",
+                "BR3": "https://placehold.co/600x400/111/f97316?text=Montagem+BR3%0A(P%C3%A3o-Carne-Cheddar-Cebola)",
+                "BR4": "https://placehold.co/600x400/111/f97316?text=Montagem+BR4%0A(P%C3%A3o-Carne-Cheddar-Bacon)",
+                "BR5": "https://placehold.co/600x400/111/f97316?text=Montagem+BR5%0A(P%C3%A3o-Carne-Muito+Cheddar)",
+                "BR6": "https://placehold.co/600x400/111/f97316?text=Montagem+BR6%0A(P%C3%A3o-Carne-Onion+Rings)",
+                "BR7": "https://placehold.co/600x400/111/f97316?text=Montagem+BR7%0A(P%C3%A3o-Carne+Sol-Queijo+Coalho)",
+                "BR8": "https://placehold.co/600x400/111/f97316?text=Montagem+BR8%0A(Dupla+Carne-Bacon-Cheddar)"
+            };
+
+            if (burgerImages[id]) {
+                img.src = burgerImages[id];
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+
             document.getElementById('modal-item').classList.remove('hidden');
         }
         window.closeModal = function() { document.getElementById('modal-item').classList.add('hidden'); }
@@ -453,7 +476,22 @@
             }, 500);
         }
         window.removeFromCart = function(i) { window.cart.splice(i,1); window.updateCartUI(); }
-        window.filterCategory = function(c) { document.querySelectorAll('.cat-btn').forEach(b => { const m = (c==='all'&&b.innerText==='Todos')||(c!=='all'&&b.innerText.includes(c.split(' ')[0])); b.classList.toggle('bg-orange-600',m); b.classList.toggle('text-white',m); b.classList.toggle('bg-black',!m); }); window.renderMenu(c); }
+        window.filterCategory = function(c) { 
+            // Corrected selector logic for buttons
+            document.querySelectorAll('.cat-btn').forEach(b => { 
+                // We compare the dataset.cat attribute which we added
+                const isActive = b.dataset.cat === c;
+                
+                if (isActive) {
+                    b.classList.remove('bg-gray-900', 'text-gray-400', 'border', 'border-gray-800');
+                    b.classList.add('bg-orange-600', 'text-white');
+                } else {
+                    b.classList.remove('bg-orange-600', 'text-white');
+                    b.classList.add('bg-gray-900', 'text-gray-400', 'border', 'border-gray-800');
+                }
+            }); 
+            window.renderMenu(c); 
+        }
         window.switchTab = function(t) { ['menu','cart','admin'].forEach(v=>document.getElementById(`view-${v}`).classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); const nm = document.getElementById('nav-menu'); const nc = document.getElementById('nav-cart'); if(nm) nm.classList.toggle('text-orange-500', t==='menu'); if(nc) nc.classList.toggle('text-orange-500', t==='cart'); window.scrollTo(0,0); if(t==='admin' && localStorage.getItem('isAdminLoggedIn')==='true'){document.getElementById('admin-login').classList.add('hidden');document.getElementById('admin-content-wrapper').classList.remove('hidden');window.updateAdminStats();} }
 
         // DB & Admin
@@ -463,7 +501,7 @@
             if(window.serverUrl.endsWith('/')) window.serverUrl = window.serverUrl.slice(0, -1);
             localStorage.setItem('del8ServerUrl', window.serverUrl);
             window.updateConnectionStatus();
-            window.initData();
+            initData(); // Call local function
             alert("Configuração salva!");
         }
         window.updateConnectionStatus = function() {
@@ -473,19 +511,25 @@
             if(window.serverUrl) { dot.classList.replace('status-offline','status-online'); text.innerText = "SERVER"; display.innerText = window.serverUrl; } 
             else { dot.classList.replace('status-online','status-offline'); text.innerText = "LOCAL"; display.innerText = "Local (Offline)"; }
         }
-        window.initData = async function() {
+        
+        // Define initData locally to be used in module scope
+        const initData = async function() {
             if(window.serverUrl) {
                 try {
                     const res = await fetch(`${window.serverUrl}/api/menu`);
                     if(res.ok) {
                         const data = await res.json();
-                        if(Object.keys(data).length > 0) { window.menuData = data; window.renderMenu('all'); }
+                        if(data && typeof data === 'object' && Object.keys(data).length > 0) { 
+                            window.menuData = data; 
+                            window.renderMenu('all'); 
+                        }
                     }
                 } catch(e) {}
             }
             const loader = document.getElementById('loading-overlay');
             if(loader) { loader.classList.add('opacity-0'); setTimeout(() => loader.classList.add('hidden'), 500); }
         }
+        
         window.sendOrder = async function(order) {
             if(window.serverUrl) {
                 try {
@@ -518,14 +562,20 @@
              window.updateAdminStats();
         }
         window.checkout = async function() {
-            const name = document.getElementById('customer-name').value.trim();
-            if(!name) return alert("Digite seu nome.");
+            const nameInput = document.getElementById('customer-name');
+            const name = nameInput.value.trim();
+            if (!name) {
+                nameInput.focus();
+                nameInput.classList.add('ring-2', 'ring-red-500');
+                setTimeout(() => nameInput.classList.remove('ring-2', 'ring-red-500'), 2000);
+                return alert("Por favor, digite seu nome para finalizar.");
+            }
             if(window.cart.length===0) return alert("Carrinho vazio.");
             const total = window.cart.reduce((a,b)=>a+(b.preco*b.qty),0);
             const items = window.cart.map(i => { const d=document.createElement('div'); d.innerHTML=i.nome; return `${i.qty}x ${d.innerText}`; }).join(', ');
             const order = { id: Date.now().toString().slice(-6), date: new Date().toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), timestamp: Date.now(), customer: name, items, total, status: 'Pendente' };
             await window.sendOrder(order);
-            window.cart = []; document.getElementById('customer-name').value = ''; window.updateCartUI();
+            window.cart = []; nameInput.value = ''; window.updateCartUI();
             alert("Pedido enviado!"); window.switchTab('menu');
         }
         window.toggleOrderStatus = function(id) {
@@ -739,7 +789,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const passInput = document.getElementById('admin-pass');
             if(passInput) passInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.checkAdmin(); });
-            window.initData();
+            initData(); // Fixed: call local function directly inside module
             window.renderMenu('all');
             window.updateCartUI(); 
         });

@@ -54,8 +54,8 @@
         </div>
     </div>
 
-    <header class="fixed top-0 w-full bg-black border-b border-gray-900 z-50 shadow-md">
-        <div class="flex items-center justify-between px-4 py-3 max-w-4xl mx-auto">
+    <header class="fixed top-0 w-full bg-black border-b border-gray-900 z-50 shadow-md h-16 flex items-center">
+        <div class="flex items-center justify-between px-4 w-full max-w-4xl mx-auto">
             <div class="flex items-center space-x-2">
                 <svg class="icon text-orange-500 text-3xl" viewBox="0 0 24 24"><path d="M20 10C20 5 4 5 4 10H20ZM3 11H21V14H3V11ZM4 15H20V18C20 20 4 20 4 18V15Z"></path></svg>
                 <h1 class="text-2xl font-bold tracking-wider text-white">DEL<span class="text-orange-500">8</span></h1>
@@ -73,9 +73,10 @@
         </div>
     </header>
 
-    <main class="mt-16 max-w-4xl mx-auto p-4 relative">
+    <main class="mt-16 pb-28 max-w-4xl mx-auto p-4 relative min-h-screen">
+        
         <!-- MENU -->
-        <div id="view-menu" class="animate-fade-in pb-16">
+        <div id="view-menu" class="animate-fade-in">
             <div class="flex space-x-4 overflow-x-auto hide-scroll pb-4 mb-2 sticky top-16 bg-black z-40 py-2 border-b border-gray-900/50">
                 <button onclick="window.filterCategory('all')" data-cat="all" class="cat-btn bg-orange-600 text-white px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap active-cat">Todos</button>
                 <button onclick="window.filterCategory('BURGER REGRETS')" data-cat="BURGER REGRETS" class="cat-btn bg-gray-900 text-gray-400 border border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap">Burgers</button>
@@ -86,7 +87,7 @@
         </div>
 
         <!-- CARRINHO -->
-        <div id="view-cart" class="hidden animate-fade-in h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar p-1">
+        <div id="view-cart" class="hidden animate-fade-in p-1">
             <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
                 <h2 class="text-2xl font-bold text-white">Seu Carrinho</h2>
                 <div class="flex gap-2">
@@ -100,16 +101,32 @@
                 <button onclick="window.closeCartAi()" class="absolute top-1 right-2 text-gray-500 hover:text-white">&times;</button>
             </div>
             <div id="cart-items-container" class="space-y-4 mb-6 mt-4"></div>
+            
             <div id="cart-footer" class="hidden bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-800 mb-4">
                 <div class="flex justify-between items-center mb-2 text-gray-400 text-sm"><span>Subtotal</span><span id="cart-subtotal" class="font-bold font-mono text-white">R$ 0,00</span></div>
                 <div class="flex justify-between items-center mb-4 text-white text-xl font-bold border-t border-gray-800 pt-2"><span>Total</span><span id="cart-total" class="text-orange-500">R$ 0,00</span></div>
+                
+                <!-- Oções de Entrega e Pagamento -->
+                <div class="flex gap-2 mb-2">
+                    <select id="order-delivery" onchange="window.toggleAddress()" class="flex-1 bg-black border border-gray-700 rounded p-2 text-white text-sm focus:border-orange-500 outline-none">
+                        <option value="Retirada">Retirada no Local</option>
+                        <option value="Entrega">Entrega (Delivery)</option>
+                    </select>
+                    <select id="order-payment" class="flex-1 bg-black border border-gray-700 rounded p-2 text-white text-sm focus:border-orange-500 outline-none">
+                        <option value="Pix">Pix</option>
+                        <option value="Cartão">Cartão</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                    </select>
+                </div>
+                
+                <input type="text" id="order-address" class="hidden w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-orange-500 font-sans mb-3 text-sm" placeholder="Endereço completo para entrega...">
                 <input type="text" id="customer-name" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-orange-500 font-sans mb-4" placeholder="Digite seu nome...">
                 <button onclick="window.checkout()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-lg flex justify-center items-center gap-2 transform active:scale-95 transition-all">FINALIZAR PEDIDO</button>
             </div>
         </div>
 
         <!-- ADMIN -->
-        <div id="view-admin" class="hidden animate-fade-in flex flex-col h-[calc(100vh-6rem)]">
+        <div id="view-admin" class="hidden animate-fade-in flex flex-col">
             <div id="admin-login" class="max-w-xs mx-auto mt-10 p-6 bg-gray-900 rounded-xl text-center border border-gray-800 shadow-2xl">
                 <div class="text-orange-500 text-5xl mb-4"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z"></path></svg></div>
                 <h3 class="text-xl font-bold mb-4 text-white">Área Restrita</h3>
@@ -119,17 +136,60 @@
                 <button onclick="window.switchTab('menu')" class="mt-4 text-xs text-gray-500 hover:text-white underline">Voltar ao Menu</button>
             </div>
 
-            <div id="admin-content-wrapper" class="hidden flex flex-col h-full">
+            <div id="admin-content-wrapper" class="hidden flex flex-col gap-2">
                 <div class="bg-gray-800 p-2 mb-4 rounded border border-gray-700 flex flex-col gap-2">
                     <label class="text-[10px] text-gray-400 uppercase font-bold">Endereço do Servidor</label>
                     <div class="flex gap-2"><input type="text" id="server-url-input" class="flex-1 bg-black border border-gray-600 rounded p-1 text-xs text-white" placeholder="Deixe vazio para modo local"><button onclick="window.saveServerConfig()" class="bg-blue-600 text-white text-xs px-3 rounded font-bold">SALVAR</button></div>
                     <p id="server-status-msg" class="text-[10px] text-gray-500">Atual: <span id="current-server-display">Local (Offline)</span></p>
 
                     <!-- Configuração do WhatsApp -->
-                    <label class="text-[10px] text-gray-400 uppercase font-bold mt-2">Número WhatsApp (Ex: 55859...)</label>
+                    <label class="text-[10px] text-gray-400 uppercase font-bold mt-2">Número WhatsApp p/ Pedidos</label>
                     <div class="flex gap-2">
                         <input type="text" id="whatsapp-number-input" class="flex-1 bg-black border border-gray-600 rounded p-1 text-xs text-white" placeholder="5585999999999">
                         <button onclick="window.saveWhatsappConfig()" class="bg-green-600 hover:bg-green-500 text-white text-xs px-3 rounded font-bold transition">SALVAR</button>
+                    </div>
+
+                    <!-- PROMO CONFIG -->
+                    <div class="mt-2 pt-2 border-t border-gray-700/60">
+                      <label class="text-[10px] text-gray-400 uppercase font-bold">Promo do Combo (Burger + R$10 = Batata + Refri)</label>
+
+                      <div class="flex items-center gap-2 mt-2">
+                        <input id="promo-enabled" type="checkbox" class="accent-orange-600 w-4 h-4 cursor-pointer">
+                        <span class="text-xs text-gray-200 font-bold">Ativar Promo</span>
+                      </div>
+
+                      <div class="mt-2">
+                        <label class="text-[10px] text-gray-400 uppercase font-bold">Nome da Promo</label>
+                        <input id="promo-name" type="text" class="w-full bg-black border border-gray-600 rounded p-2 text-xs text-white" placeholder="Ex: Combo do Regret">
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-2 mt-2">
+                        <div>
+                          <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Início</label>
+                          <input id="promo-start" type="datetime-local" class="w-full bg-black border border-gray-600 rounded p-2 text-xs text-white">
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Fim</label>
+                          <input id="promo-end" type="datetime-local" class="w-full bg-black border border-gray-600 rounded p-2 text-xs text-white">
+                        </div>
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-2 mt-2">
+                        <div>
+                          <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Valor (R$)</label>
+                          <input id="promo-price" type="number" step="0.01" class="w-full bg-black border border-gray-600 rounded p-2 text-xs text-white" placeholder="10.00">
+                        </div>
+                        <div class="flex items-end">
+                          <button onclick="window.savePromoConfig()"
+                            class="w-full bg-orange-600 hover:bg-orange-500 text-white text-xs px-3 py-2 rounded font-bold transition">
+                            SALVAR PROMO
+                          </button>
+                        </div>
+                      </div>
+
+                      <p id="promo-status" class="text-[10px] text-gray-500 mt-2">
+                        Status: <span class="text-gray-300">—</span>
+                      </p>
                     </div>
 
                     <!-- BACKUP / RESTORE -->
@@ -163,9 +223,9 @@
                 
                 <div class="flex gap-2 p-1 bg-gray-900 rounded-lg border border-gray-800 mb-4"><button onclick="window.switchAdminView('orders')" id="btn-admin-orders" class="flex-1 py-2 text-sm font-bold rounded bg-orange-600 text-white">PEDIDOS</button><button onclick="window.switchAdminView('menu')" id="btn-admin-menu" class="flex-1 py-2 text-sm font-bold rounded text-gray-400">CARDÁPIO</button><button onclick="window.switchAdminView('analysis')" id="btn-admin-analysis" class="flex-1 py-2 text-sm font-bold rounded text-gray-400 flex items-center justify-center gap-1"><svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg> ANÁLISE</button></div>
 
-                <div id="admin-orders-view" class="flex-1 overflow-y-auto custom-scrollbar p-1">
+                <div id="admin-orders-view" class="p-1">
                     <div class="grid grid-cols-2 gap-2 mb-6">
-                        <div class="bg-gray-900 p-3 rounded-lg border-l-2 border-green-500 shadow"><p class="text-[10px] text-gray-500 uppercase font-sans">Hoje (Fechado)</p><p id="stat-daily" class="text-lg font-bold text-white">R$ 0,00</p></div>
+                        <div class="bg-gray-900 p-3 rounded-lg border-l-2 border-green-500 shadow"><p class="text-[10px] text-gray-500 uppercase font-sans">Hoje + Caixa</p><p id="stat-daily" class="text-lg font-bold text-white">R$ 0,00</p></div>
                         <div class="bg-gray-900 p-3 rounded-lg border-l-2 border-blue-500 shadow"><p class="text-[10px] text-gray-500 uppercase font-sans">Semana</p><p id="stat-weekly" class="text-lg font-bold text-white">R$ 0,00</p></div>
                         <div class="bg-gray-900 p-3 rounded-lg border-l-2 border-purple-500 shadow"><p class="text-[10px] text-gray-500 uppercase font-sans">Mês</p><p id="stat-monthly" class="text-lg font-bold text-white">R$ 0,00</p></div>
                         <div class="bg-gray-900 p-3 rounded-lg border-l-2 border-orange-500 shadow"><p class="text-[10px] text-gray-500 uppercase font-sans">Total Geral</p><p id="stat-revenue" class="text-lg font-bold text-white">R$ 0,00</p></div>
@@ -180,13 +240,13 @@
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20 font-sans h-full">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 font-sans">
                         <div class="flex flex-col"><h4 class="text-orange-500 font-bold text-xs uppercase mb-2 border-b border-orange-500/30 pb-1">Pendentes</h4><div id="pending-orders-list" class="space-y-3 min-h-[150px] rounded-lg p-1 transition-colors" ondrop="window.drop(event, 'Pendente')" ondragover="window.allowDrop(event)" ondragleave="window.leaveDrop(event)"></div></div>
                         <div class="flex flex-col"><h4 class="text-green-500 font-bold text-xs uppercase mb-2 border-b border-green-500/30 pb-1">Prontos</h4><div id="completed-orders-list" class="space-y-3 min-h-[150px] rounded-lg p-1 transition-colors" ondrop="window.drop(event, 'Pronto')" ondragover="window.allowDrop(event)" ondragleave="window.leaveDrop(event)"></div></div>
                     </div>
                 </div>
 
-                <div id="admin-menu-view" class="hidden flex-1 overflow-y-auto custom-scrollbar p-1 pb-20">
+                <div id="admin-menu-view" class="hidden p-1">
                     <button onclick="window.openMenuEditModal()" class="w-full mb-4 bg-green-600 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2">Adicionar Novo Item</button>
                     <div id="admin-menu-list" class="space-y-3"></div>
                     <div class="mt-4 pt-4 border-t border-gray-800">
@@ -194,7 +254,7 @@
                     </div>
                 </div>
 
-                <div id="admin-analysis-view" class="hidden flex-1 overflow-y-auto custom-scrollbar p-1 pb-20">
+                <div id="admin-analysis-view" class="hidden p-1">
                     <div class="mb-4">
                         <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">Importar CSV para Análise</label>
                         <div class="flex gap-2">
@@ -219,13 +279,12 @@
         </div>
     </main>
 
-    <nav class="fixed bottom-0 w-full bg-black border-t border-gray-900 safe-bottom z-50">
-        <div class="flex justify-around items-center h-16 max-w-4xl mx-auto">
-            <button onclick="window.switchTab('menu')" id="nav-menu" class="nav-btn flex flex-col items-center text-orange-500"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"></path></svg><span class="text-xs font-bold">Menu</span></button>
-            <button onclick="window.switchTab('cart')" id="nav-cart" class="nav-btn flex flex-col items-center text-gray-500 relative"><div class="relative"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path><circle cx="10.5" cy="19.5" r="1.5"></circle><circle cx="17.5" cy="19.5" r="1.5"></circle></svg><span id="nav-cart-badge" class="absolute -top-1 -right-2 bg-orange-600 text-white text-[10px] font-bold px-1 rounded-full hidden font-sans">0</span></div><span class="text-xs font-bold">Carrinho</span></button>
-        </div>
+    <nav class="fixed bottom-0 w-full bg-black border-t border-gray-900 safe-bottom z-50 h-16 flex items-center justify-around max-w-4xl mx-auto left-0 right-0">
+        <button onclick="window.switchTab('menu')" id="nav-menu" class="nav-btn flex flex-col items-center text-orange-500 w-full"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"></path></svg><span class="text-xs font-bold">Menu</span></button>
+        <button onclick="window.switchTab('cart')" id="nav-cart" class="nav-btn flex flex-col items-center text-gray-500 relative w-full"><div class="relative"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path><circle cx="10.5" cy="19.5" r="1.5"></circle><circle cx="17.5" cy="19.5" r="1.5"></circle></svg><span id="nav-cart-badge" class="absolute -top-1 -right-2 bg-orange-600 text-white text-[10px] font-bold px-1 rounded-full hidden font-sans">0</span></div><span class="text-xs font-bold">Carrinho</span></button>
     </nav>
 
+    <!-- Modals -->
     <div id="modal-item" class="fixed inset-0 bg-black/90 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-gray-900 rounded-xl max-w-md w-full p-5 relative border border-gray-800 shadow-2xl">
             <button onclick="window.closeModal()" class="absolute top-3 right-3 text-gray-500 text-xl hover:text-white transition">&times;</button>
@@ -251,9 +310,9 @@
             <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><svg class="icon" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg> Histórico Diário</h3>
             <div class="flex-1 overflow-y-auto custom-scrollbar border border-gray-800 rounded-lg">
                 <table class="w-full history-table text-left">
-                    <thead class="bg-black text-xs uppercase sticky top-0">
+                    <thead class="bg-black text-xs uppercase sticky top-0 z-10">
                         <tr>
-                            <th class="pl-2"></th> <!-- Checkbox column -->
+                            <th class="pl-2"></th>
                             <th>Data</th>
                             <th class="text-center">Peds</th>
                             <th class="text-center text-orange-500">Prods</th>
@@ -292,7 +351,7 @@
       </div>
     </div>
 
-    <!-- ... (Menu Edit Modal remains same) ... -->
+    <!-- Menu Edit Modal -->
     <div id="modal-menu-edit" class="fixed inset-0 bg-black/95 z-[80] hidden flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-gray-900 rounded-xl max-w-md w-full p-6 relative border border-gray-700 shadow-2xl">
             <button onclick="window.closeMenuEditModal()" class="absolute top-3 right-3 text-gray-500 text-xl">&times;</button>
@@ -312,9 +371,7 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        const apiKey = ""; // Chave de API para Gemini, se usar
 
         // Global State attached to Window
         window.db = null; window.auth = null; window.appId = null; window.userId = null;
@@ -327,6 +384,35 @@
         window.currentModalItem = null;
         window.modalQtyVal = 1;
         window.dailyOverrides = JSON.parse(localStorage.getItem("del8DailyOverrides")) || {};
+
+        // ===== PROMO CONFIG (COM AGENDA) =====
+        const PROMO_STORAGE_KEY = "del8PromoConfig";
+        
+        let defaultPromoConfig = {
+          enabled: false,
+          startAt: "", 
+          endAt: "",   
+          price: 10.00,
+          promoName: "Promo Combo DEL8",
+          multiMode: "perBurger",
+          bundleCartItem: {
+            id: "PROMO_COMBO_DEL8",
+            nome: "🔥 Combo Promo (Batata + Refri)",
+            desc: "Adicional promocional: Batata + Refri",
+            preco: 10.00
+          }
+        };
+
+        try {
+            let parsedPromo = JSON.parse(localStorage.getItem(PROMO_STORAGE_KEY));
+            if (parsedPromo && typeof parsedPromo === 'object') {
+                window.promoConfig = { ...defaultPromoConfig, ...parsedPromo };
+            } else {
+                window.promoConfig = defaultPromoConfig;
+            }
+        } catch (e) {
+            window.promoConfig = defaultPromoConfig;
+        }
 
         // Load dynamically from menu_data.js if available, otherwise use fallback
         let DEFAULT_MENU = {};
@@ -499,6 +585,17 @@
                 g.innerHTML += `<div class="card-gradient rounded-xl p-4 shadow-lg flex flex-col justify-between"><div><div class="flex justify-between items-start"><h3 class="font-bold text-lg text-white leading-tight">${i.nome}</h3><span class="text-xs font-mono text-gray-500 bg-black px-1 rounded border border-gray-800 font-bold">${i.id}</span></div><p class="text-gray-400 text-sm mt-2 line-clamp-2 font-sans">${i.desc}</p></div><div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-800"><button onclick="window.openItemModal('${i.id}')" class="bg-orange-600 hover:bg-orange-500 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg active:scale-95 transition-all"><svg class="icon text-xs" viewBox="0 0 24 24"><path d="M11 9h2V6h3V4h-3V1h-2v3H8v2h3v3zm-4 9c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2zm-9.83-3.25.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.86-7.01L19.42 4h-.01l-1.1 2-2.76 5H8.53l-.13-.27L6.16 6l-.95-2-.94-2H1v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.13 0-.25-.11-.25-.25z"></path></svg></button><span class="text-orange-500 font-bold text-xl price-tag">R$ ${parseFloat(i.preco).toFixed(2)}</span></div></div>`;
             });
         }
+
+        window.toggleAddress = function() {
+            const deliveryMethod = document.getElementById('order-delivery').value;
+            const addressInput = document.getElementById('order-address');
+            if (deliveryMethod === 'Entrega') {
+                addressInput.classList.remove('hidden');
+            } else {
+                addressInput.classList.add('hidden');
+            }
+        }
+
         window.updateCartUI = function() {
             const c = document.getElementById('cart-items-container'), f = document.getElementById('cart-footer');
             if(!c) return;
@@ -586,6 +683,7 @@
                 }
             }); 
             window.renderMenu(c); 
+            window.scrollTo(0,0);
         }
         window.switchTab = function(t) { ['menu','cart','admin'].forEach(v=>document.getElementById(`view-${v}`).classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); const nm = document.getElementById('nav-menu'); const nc = document.getElementById('nav-cart'); if(nm) nm.classList.toggle('text-orange-500', t==='menu'); if(nc) nc.classList.toggle('text-orange-500', t==='cart'); window.scrollTo(0,0); if(t==='admin' && localStorage.getItem('isAdminLoggedIn')==='true'){document.getElementById('admin-login').classList.add('hidden');document.getElementById('admin-content-wrapper').classList.remove('hidden');window.updateAdminStats();} }
 
@@ -602,15 +700,144 @@
 
         window.saveWhatsappConfig = function() {
             const input = document.getElementById('whatsapp-number-input');
-            const num = input.value.replace(/\D/g, ''); // Remove tudo que não for número
-            if (num) {
+            let num = input.value.replace(/\D/g, ''); // Remove tudo que não for número
+            if (num && num.length >= 10) {
+                if (!num.startsWith("55")) num = "55" + num;
                 window.whatsappNumber = num;
                 localStorage.setItem('del8WhatsappNumber', num);
                 window.showToast("Número do WhatsApp salvo!");
+                input.value = num;
             } else {
-                alert("Digite um número válido.");
+                alert("Digite um número válido com DDD (mínimo 10 dígitos). Ex: 5585999999999");
             }
         }
+
+        window.savePromoConfig = function() {
+          const enabled = document.getElementById("promo-enabled")?.checked || false;
+          const startAt = document.getElementById("promo-start")?.value || "";
+          const endAt = document.getElementById("promo-end")?.value || "";
+          const price = parseFloat(document.getElementById("promo-price")?.value || "10");
+          const promoName = (document.getElementById("promo-name")?.value || "").trim();
+
+          if (Number.isNaN(price) || price < 0) return alert("Valor da promo inválido.");
+
+          // validação de datas (se ambos preenchidos)
+          if (startAt && endAt) {
+            const s = new Date(startAt).getTime();
+            const e = new Date(endAt).getTime();
+            if (e <= s) return alert("O fim precisa ser depois do início.");
+          }
+
+          window.promoConfig = { ...window.promoConfig, enabled, startAt, endAt, price, promoName };
+          localStorage.setItem(PROMO_STORAGE_KEY, JSON.stringify(window.promoConfig));
+          window.updatePromoStatusUI();
+          window.showToast("Promo salva ✅");
+        };
+
+        window.isPromoActiveNow = function() {
+          const cfg = window.promoConfig;
+          if (!cfg?.enabled) return false;
+
+          const now = Date.now();
+
+          // se não programou nada, ativa só pelo toggle
+          if (!cfg.startAt && !cfg.endAt) return true;
+
+          // se só setou início
+          if (cfg.startAt && !cfg.endAt) return now >= new Date(cfg.startAt).getTime();
+
+          // se só setou fim
+          if (!cfg.startAt && cfg.endAt) return now <= new Date(cfg.endAt).getTime();
+
+          // se setou ambos
+          return (
+            now >= new Date(cfg.startAt).getTime() &&
+            now <= new Date(cfg.endAt).getTime()
+          );
+        };
+
+        window.updatePromoStatusUI = function() {
+          const el = document.getElementById("promo-status");
+          if (!el) return;
+
+          const cfg = window.promoConfig || {};
+          const activeNow = window.isPromoActiveNow();
+
+          const enabledTxt = cfg.enabled ? "Ligada" : "Desligada";
+          const schedTxt = (cfg.startAt || cfg.endAt)
+            ? ` | Janela: ${cfg.startAt || "—"} → ${cfg.endAt || "—"}`
+            : " | Sem agenda";
+
+          el.innerHTML = `Status: <span class="${activeNow ? "text-green-400" : "text-gray-300"} font-bold">
+            ${enabledTxt}${activeNow ? " (ATIVA agora)" : " (INATIVA agora)"}
+          </span><span class="text-gray-500">${schedTxt}</span>`;
+        };
+
+        window.countPromoBundlesInCart = function() {
+          const promoId = window.promoConfig?.bundleCartItem?.id || "PROMO_COMBO_DEL8";
+          const item = window.cart.find(i => i.id === promoId);
+          return item ? Number(item.qty || 0) : 0;
+        };
+
+        window.countBurgersInCart = function() {
+          const burgers = window.menuData?.["BURGER REGRETS"] || [];
+
+          const burgerNames = burgers.map(i => {
+            const d = document.createElement("div");
+            d.innerHTML = i.nome || "";
+            return d.innerText.toLowerCase();
+          });
+
+          let totalBurgerQty = 0;
+
+          window.cart.forEach(i => {
+            const d = document.createElement("div");
+            d.innerHTML = i.nome || "";
+            const name = d.innerText.toLowerCase();
+
+            const isBurger = burgerNames.some(b => name.includes(b) || b.includes(name));
+            if (isBurger) totalBurgerQty += Number(i.qty || 0);
+          });
+
+          return totalBurgerQty;
+        };
+
+        window.ensurePromoBundleName = function(item) {
+          const promoName = (window.promoConfig?.promoName || "").trim();
+          if (promoName) item.nome = `🔥 ${promoName} (Batata + Refri)`;
+          return item;
+        };
+
+        window.addPromoBundlesToCart = function(qtyToAdd) {
+          const cfg = window.promoConfig;
+          const promoId = cfg?.bundleCartItem?.id || "PROMO_COMBO_DEL8";
+          const price = Number(cfg.price ?? cfg.bundleCartItem?.preco ?? 10);
+
+          qtyToAdd = Math.max(0, parseInt(qtyToAdd || "0", 10));
+          if (!qtyToAdd) return;
+
+          const existing = window.cart.find(i => i.id === promoId);
+
+          if (existing) {
+            existing.qty = Number(existing.qty || 0) + qtyToAdd;
+            existing.preco = price; // garante preço atualizado
+            existing.obs = (existing.obs || "").includes("Promo") ? existing.obs : "Promo ativa";
+            window.ensurePromoBundleName(existing);
+          } else {
+            const item = window.ensurePromoBundleName({
+              ...cfg.bundleCartItem,
+              id: promoId,
+              preco: price,
+              qty: qtyToAdd,
+              obs: "Promo ativa",
+              uniqueId: Date.now(),
+              __promo: true
+            });
+            window.cart.push(item);
+          }
+
+          window.updateCartUI();
+        };
 
         window.updateConnectionStatus = function() {
             const dot = document.getElementById('status-dot');
@@ -643,10 +870,19 @@
                     }
                 } catch(e) {}
             }
+            // Remove overlay immediately so the user is never stuck
             const loader = document.getElementById('loading-overlay');
             if(loader) { loader.classList.add('opacity-0'); setTimeout(() => loader.classList.add('hidden'), 500); }
         }
         
+        // Failsafe for the loading screen
+        setTimeout(() => {
+            const loader = document.getElementById('loading-overlay');
+            if(loader && !loader.classList.contains('hidden')) { 
+                loader.classList.add('opacity-0'); setTimeout(() => loader.classList.add('hidden'), 500); 
+            }
+        }, 3000);
+
         window.sendOrder = async function(order) {
             if(window.serverUrl) {
                 try {
@@ -654,7 +890,7 @@
                     if(!res.ok) throw new Error("Falha");
                     return true;
                 } catch(e) {
-                    alert("Erro online. Salvo localmente.");
+                    // alert("Erro online. Salvo localmente."); // Optional: remove alert for seamless whatsapp exp
                     window.localOrders.push(order); localStorage.setItem('del8LocalOrders', JSON.stringify(window.localOrders));
                     return false;
                 }
@@ -663,6 +899,15 @@
                 return true;
             }
         }
+        
+        window.syncMenu = async function(menuDataToSync) {
+            if(window.serverUrl) {
+                try {
+                    await fetch(`${window.serverUrl}/api/menu`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(menuDataToSync) });
+                } catch(e) { console.warn("Erro ao sincronizar menu:", e); }
+            }
+        }
+
         window.fetchOrders = async function() {
             if(window.serverUrl) {
                 try { const res = await fetch(`${window.serverUrl}/api/orders`); if(res.ok) return await res.json(); } catch(e) {}
@@ -688,42 +933,130 @@
                 return alert("Por favor, digite seu nome para finalizar.");
             }
             if(window.cart.length===0) return alert("Carrinho vazio.");
+
+            // =========================================================
+            // 1) OFERTA DA PROMO (ANTES DE SALVAR / WHATS)
+            // =========================================================
+            if (window.isPromoActiveNow()) {
+              const burgerQty = window.countBurgersInCart();
+              const promoQty = window.countPromoBundlesInCart();
+
+              // trava: se não tiver burger, não oferta
+              if (burgerQty > 0) {
+                const maxByBurger = Math.max(0, burgerQty - promoQty);
+
+                // modo 1: 1 combo por burger (automático com confirmação)
+                if (window.promoConfig.multiMode === "perBurger" || !window.promoConfig.multiMode) {
+                  if (maxByBurger > 0) {
+                    const price = Number(window.promoConfig?.price ?? 10);
+                    const promoName = window.promoConfig?.promoName?.trim() || "Promo Combo DEL8";
+
+                    const accept = confirm(
+                      `🔥 ${promoName}!\n\n` +
+                      `Você tem ${burgerQty} burger(s) no carrinho.\n` +
+                      `Pode adicionar até ${maxByBurger} combo(s).\n\n` +
+                      `Cada combo: + R$ ${price.toFixed(2)} (Batata + Refri)\n\n` +
+                      `Quer adicionar agora?`
+                    );
+
+                    if (accept) {
+                      // adiciona o máximo permitido automaticamente
+                      window.addPromoBundlesToCart(maxByBurger);
+                    }
+                  }
+                }
+
+                // modo 2: manual (pergunta quantos combos)
+                if (window.promoConfig.multiMode === "manual") {
+                  const price = Number(window.promoConfig?.price ?? 10);
+                  const promoName = window.promoConfig?.promoName?.trim() || "Promo Combo DEL8";
+
+                  const desired = prompt(
+                    `${promoName}\n\n` +
+                    `Você tem ${burgerQty} burger(s).\n` +
+                    `Quantos combos deseja adicionar? (0 a ${burgerQty})\n\n` +
+                    `Cada combo: + R$ ${price.toFixed(2)}`
+                  );
+
+                  if (desired !== null) {
+                    let qty = parseInt(desired, 10);
+                    if (!Number.isFinite(qty)) qty = 0;
+                    qty = Math.max(0, Math.min(burgerQty, qty));
+
+                    const addQty = Math.max(0, qty - promoQty); // evita duplicar
+                    if (addQty > 0) window.addPromoBundlesToCart(addQty);
+                  }
+                }
+              }
+            }
+
+            const deliveryMethod = document.getElementById('order-delivery').value;
+            const paymentMethod = document.getElementById('order-payment').value;
+            const address = document.getElementById('order-address').value.trim();
+
+            if (deliveryMethod === "Entrega" && !address) {
+                document.getElementById('order-address').focus();
+                return alert("Por favor, digite o endereço de entrega completo.");
+            }
             
             const total = window.cart.reduce((a,b)=>a+(b.preco*b.qty),0);
             
-            // Prepara a string de itens (agora incluindo observações, se houver)
-            const items = window.cart.map(i => { 
+            // Format for local DB
+            const itemsPlain = window.cart.map(i => { 
                 const d=document.createElement('div'); d.innerHTML=i.nome; 
                 let txt = `${i.qty}x ${d.innerText}`;
                 if (i.obs) txt += ` (Obs: ${i.obs})`;
                 return txt;
             }).join(', ');
+
+            // Format for WhatsApp (nicer)
+            const itemsLines = window.cart.map(i => {
+                const d = document.createElement('div'); d.innerHTML = i.nome;
+                let txt = `• ${i.qty}x ${d.innerText}`;
+                if (i.obs) txt += `\n   ↳ Obs: ${i.obs}`;
+                return txt;
+            }).join('\n');
             
             const orderId = Date.now().toString().slice(-6);
-            const order = { id: orderId, date: new Date().toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), timestamp: Date.now(), customer: name, items, total, status: 'Pendente' };
+            const order = { id: orderId, date: new Date().toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), timestamp: Date.now(), customer: name, items: itemsPlain, total, status: 'Pendente' };
             
             // Salva no sistema local (Painel Admin)
             await window.sendOrder(order);
             
             // --- INTEGRAÇÃO WHATSAPP ---
             const phone = window.whatsappNumber; // Usa o número configurado
-            const msg = 
-                `🍔 *NOVO PEDIDO - DEL8* (#${orderId})\n` +
-                `👤 Cliente: ${name}\n` +
-                `🧾 Itens: ${items}\n` +
-                `💰 Total: R$ ${total.toFixed(2)}\n` +
+            let msg = 
+                `🍔 *NOVO PEDIDO - DEL8* (#${orderId})\n\n` +
+                `👤 *Cliente:* ${name}\n` +
+                `🛵 *Retirada/Entrega:* ${deliveryMethod}\n`;
+            
+            if (deliveryMethod === "Entrega") {
+                msg += `📍 *Endereço:* ${address}\n`;
+            }
+
+            msg += `💳 *Pagamento:* ${paymentMethod}\n\n` +
+                `🧾 *Itens:*\n${itemsLines}\n\n` +
+                `💰 *Total:* R$ ${total.toFixed(2)}\n` +
                 `🕒 ${order.time}\n` +
                 `\n✅ Confirme recebimento e prazo, por favor.`;
 
             const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-            window.open(url, "_blank"); // Abre o WhatsApp em nova aba/app
+            
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            if (isMobile) {
+                window.location.href = url;
+            } else {
+                window.open(url, "_blank");
+            }
             
             // Limpa o carrinho e reseta a UI
             window.cart = []; 
             nameInput.value = ''; 
+            document.getElementById('order-address').value = '';
             window.updateCartUI();
             window.switchTab('menu');
         }
+
         window.toggleOrderStatus = function(id) {
              let order = window.localOrders.find(o => o.id == id);
              if (order) {
@@ -743,13 +1076,19 @@
             const now = new Date();
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-            const current = new Date();
-            const day = current.getDay(); 
-            const diff = current.getDate() - day; 
-            const startOfWeek = new Date(current.setDate(diff)).getTime();
+            
+            // Semana começando segunda-feira (ajustado para Brasil)
+            const startWeek = new Date(now);
+            startWeek.setHours(0,0,0,0);
+            const dayOffset = (startWeek.getDay() + 6) % 7; // 0 = Seg, 1 = Ter...
+            startWeek.setDate(startWeek.getDate() - dayOffset);
+            const startOfWeek = startWeek.getTime();
 
             let daily = 0, weekly = 0, monthly = 0, total = 0;
-            window.archivedOrders.forEach(o => {
+            
+            // Includes both archived AND local orders in stats (corrigido)
+            const allForStats = [...window.archivedOrders, ...window.localOrders];
+            allForStats.forEach(o => {
                 let t = o.timestamp;
                 if(t) {
                     if (t >= startOfDay) daily += o.total;
@@ -804,7 +1143,12 @@
             const cat=document.getElementById('edit-cat').value, name=document.getElementById('edit-name').value, desc=document.getElementById('edit-desc').value, price=parseFloat(document.getElementById('edit-price').value);
             const oCat=document.getElementById('edit-original-cat').value, idx=document.getElementById('edit-index').value;
             if(!name||!desc||isNaN(price)) return alert("Preencha tudo");
-            let item = { id: idx!==''?window.menuData[oCat][idx].id : (cat.substr(0,2)+(window.menuData[cat]?window.menuData[cat].length+1:1)+Math.random().toString(36).substr(2,2).toUpperCase()), nome:name, desc, preco:price };
+            
+            // Tratamento contra XSS basico
+            let safeName = name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            let safeDesc = desc.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            let item = { id: idx!==''?window.menuData[oCat][idx].id : (cat.substr(0,2)+(window.menuData[cat]?window.menuData[cat].length+1:1)+Math.random().toString(36).substr(2,2).toUpperCase()), nome:safeName, desc:safeDesc, preco:price };
             if(idx!=='') { if(cat===oCat) window.menuData[cat][idx]=item; else { window.menuData[oCat].splice(idx,1); (window.menuData[cat]||(window.menuData[cat]=[])).push(item); } } 
             else { (window.menuData[cat]||(window.menuData[cat]=[])).push(item); }
             localStorage.setItem('del8MenuData', JSON.stringify(window.menuData));
@@ -820,7 +1164,7 @@
             const dailyEl = document.getElementById('stat-daily');
             const dailyValue = dailyEl ? dailyEl.innerText : 'R$ 0,00';
 
-            if(confirm(`FECHAR CAIXA DO DIA?\n\nFaturamento (histórico fechado) Hoje: ${dailyValue}\n\nDeseja zerar a lista de pedidos para amanhã?`)) {
+            if(confirm(`FECHAR CAIXA DO DIA?\n\nFaturamento Hoje: ${dailyValue}\n\nDeseja zerar a lista de pedidos para amanhã?`)) {
 
                 // move caixa atual -> histórico
                 window.archivedOrders = [...window.archivedOrders, ...window.localOrders];
@@ -923,124 +1267,42 @@
             let csv = "ID,Data,Hora,Cliente,Itens,Total,Status\n" + all.map(o => `${o.id},${o.date},${o.time},${o.customer},"${o.items}",${o.total},${o.status}`).join("\n");
             const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8,"+csv); link.download = "historico_completo.csv"; link.click();
         }
-        window.showToast = function(m){const t=document.getElementById('toast'); document.getElementById('toast-msg').innerText=m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),2000);}
+        window.showToast = function(m){
+            const t = document.getElementById('toast');
+            if (!t) return;
+            const msgEl = document.getElementById('toast-msg');
+            if (msgEl) msgEl.innerText = m;
+            t.classList.remove('hidden');
+            t.classList.remove('opacity-0', 'translate-y-[-20px]');
+            setTimeout(() => {
+                t.classList.add('opacity-0', 'translate-y-[-20px]');
+                setTimeout(() => t.classList.add('hidden'), 300);
+            }, 2000);
+        }
         window.deleteSelected = function(){if(!confirm('Apagar selecionados?'))return; const ids=Array.from(document.querySelectorAll('.order-checkbox:checked')).map(c=>parseInt(c.value)); if(window.serverUrl) { } else { window.localOrders=window.localOrders.filter(o=>!ids.includes(o.id)); localStorage.setItem('del8LocalOrders',JSON.stringify(window.localOrders)); window.updateAdminStats(); } }
         window.toggleSelection = function(){const btn=document.getElementById('btn-delete-selected'); if(!btn)return; const c=document.querySelectorAll('.order-checkbox:checked').length; btn.classList.toggle('hidden', c===0); if(c>0){const counter=document.getElementById('delete-count'); if(counter)counter.innerText=c;}}
         window.clearAllHistoryManual = function() { if(confirm("Deseja mesmo limpar todo o histórico atual?")) { window.internalClearOrders(); } }
 
-        // ===============================
-        // BACKUP / RESTORE (JSON)
-        // ===============================
-        window.getBackupPayload = function() {
-            const payload = {
-                meta: {
-                    app: "DEL8_LOCAL_SYSTEM",
-                    version: "1.0",
-                    exportedAt: new Date().toISOString()
-                },
-                del8ServerUrl: localStorage.getItem("del8ServerUrl") || "",
-                del8WhatsappNumber: localStorage.getItem("del8WhatsappNumber") || "5585999999999",
-                del8MenuData: JSON.parse(localStorage.getItem("del8MenuData") || "null"),
-                del8LocalOrders: JSON.parse(localStorage.getItem("del8LocalOrders") || "[]"),
-                del8ArchivedOrders: JSON.parse(localStorage.getItem("del8ArchivedOrders") || "[]"),
-                del8DailyOverrides: JSON.parse(localStorage.getItem("del8DailyOverrides") || "{}"),
-                isAdminLoggedIn: localStorage.getItem("isAdminLoggedIn") || "false",
-            };
-
-            // Fallback seguro: se menu vier vazio/quebrado, leva o menu atual em memória
-            if (!payload.del8MenuData || typeof payload.del8MenuData !== "object") {
-                payload.del8MenuData = window.menuData || null;
-            }
-
-            return payload;
-        };
-
-        window.exportFullBackup = function() {
-            try {
-                const payload = window.getBackupPayload();
-                const json = JSON.stringify(payload, null, 2);
-
-                const stamp = new Date().toLocaleDateString("pt-BR").replaceAll("/", "-");
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
-                link.download = `DEL8-backup-${stamp}.json`;
-                link.click();
-
-                window.showToast("Backup exportado ✅");
-            } catch (e) {
-                alert("Falha ao exportar backup.");
-                console.error(e);
-            }
-        };
-
-        window.importFullBackup = function(ev) {
-            const file = ev?.target?.files?.[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const raw = e.target.result;
-                    const data = JSON.parse(raw);
-
-                    // validação mínima
-                    const looksValid =
-                        data &&
-                        typeof data === "object" &&
-                        (data.meta?.app === "DEL8_LOCAL_SYSTEM" || data.del8MenuData || data.del8LocalOrders || data.del8ArchivedOrders);
-
-                    if (!looksValid) {
-                        alert("Esse arquivo não parece um backup válido do DEL8.");
-                        return;
-                    }
-
-                    if (!confirm("IMPORTAR BACKUP?\n\nIsso vai SUBSTITUIR os dados atuais do sistema.")) return;
-
-                    // aplica restore
-                    if (typeof data.del8ServerUrl === "string") localStorage.setItem("del8ServerUrl", data.del8ServerUrl);
-                    if (typeof data.del8WhatsappNumber === "string") localStorage.setItem("del8WhatsappNumber", data.del8WhatsappNumber);
-                    if (data.del8MenuData && typeof data.del8MenuData === "object") localStorage.setItem("del8MenuData", JSON.stringify(data.del8MenuData));
-                    if (Array.isArray(data.del8LocalOrders)) localStorage.setItem("del8LocalOrders", JSON.stringify(data.del8LocalOrders));
-                    if (Array.isArray(data.del8ArchivedOrders)) localStorage.setItem("del8ArchivedOrders", JSON.stringify(data.del8ArchivedOrders));
-                    if (data.del8DailyOverrides && typeof data.del8DailyOverrides === "object") localStorage.setItem("del8DailyOverrides", JSON.stringify(data.del8DailyOverrides));
-                    if (typeof data.isAdminLoggedIn === "string") localStorage.setItem("isAdminLoggedIn", data.isAdminLoggedIn);
-
-                    // atualiza estado em memória (pra refletir na UI sem precisar “adivinhar”)
-                    window.serverUrl = localStorage.getItem("del8ServerUrl") || "";
-                    window.whatsappNumber = localStorage.getItem("del8WhatsappNumber") || "5585999999999";
-                    window.menuData = JSON.parse(localStorage.getItem("del8MenuData")) || window.menuData;
-                    window.localOrders = JSON.parse(localStorage.getItem("del8LocalOrders")) || [];
-                    window.archivedOrders = JSON.parse(localStorage.getItem("del8ArchivedOrders")) || [];
-                    window.dailyOverrides = JSON.parse(localStorage.getItem("del8DailyOverrides")) || {};
-
-                    // atualiza UI
-                    window.updateConnectionStatus();
-                    const waInput = document.getElementById("whatsapp-number-input");
-                    if (waInput) waInput.value = window.whatsappNumber;
-                    const serverInput = document.getElementById("server-url-input");
-                    if (serverInput) serverInput.value = window.serverUrl;
-
-                    window.renderMenu("all");
-                    window.updateCartUI();
-                    await window.updateAdminStats();
-
-                    window.showToast("Backup importado ✅");
-                    alert("Backup importado com sucesso!");
-                } catch (err) {
-                    alert("Falha ao importar: arquivo inválido ou corrompido.");
-                    console.error(err);
-                } finally {
-                    // limpa input pra poder importar o mesmo arquivo de novo
-                    const input = document.getElementById("backup-upload");
-                    if (input) input.value = "";
-                }
-            };
-
-            reader.readAsText(file);
-        };
-
-        // --- NEW EDIT HISTORY FUNCTIONS ---
-        window.dailyOverrides = JSON.parse(localStorage.getItem("del8DailyOverrides")) || {};
+        window.analyzeCart = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-analyze-cart'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await window.callGemini("Analise", `Garçom sarcástico DEL 8. Pedido: ${window.cart.map(i=>i.nome).join(', ')}. Comente curto.`); document.getElementById('cart-ai-text').innerText=r; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
+        window.generateDietExcuse = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-diet-excuse'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await window.callGemini("Desculpa", `Advogado engraçado. Cliente comeu: ${window.cart.map(i=>i.nome).join(', ')}. Desculpa p/ nutricionista. Curta.`); document.getElementById('cart-ai-text').innerText=`🤥 "${r}"`; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
+        window.generateSlogan = async function(){const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await window.callGemini("Slogan", "Slogan curto/moderno/neon DEL 8."); alert(`📢 "${r.replace(/["']/g,"")}"`); b.innerText=h; b.disabled=false;}
+        window.generateAIDescription = async function(){const n=document.getElementById('edit-name').value; if(!n)return alert('Nome?'); const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await window.callGemini("Descrição", `Mkt DEL 8. Descrição curta para: ${n}`); document.getElementById('edit-desc').value=r.replace(/["']/g,""); b.innerText=h; b.disabled=false;}
+        window.askChefAI = async function() {
+            const userInput = document.getElementById('ai-chef-input').value.trim();
+            if (!userInput) return;
+            const btn = document.getElementById('btn-ask-chef');
+            const resultDiv = document.getElementById('ai-chef-result');
+            btn.disabled = true; btn.innerHTML = '<svg class="icon animate-spin" viewBox="0 0 24 24"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"></path></svg> Pensando...';
+            const menuContext = JSON.stringify(window.menuData); 
+            const systemPrompt = `Você é a "Chef IA" da hamburgueria "DEL 8". O menu: ${menuContext}. Sugira 1-2 itens com base em: "${userInput}". Curto e divertido.`;
+            const response = await window.callGemini(userInput, systemPrompt);
+            resultDiv.innerHTML = marked.parse(response); resultDiv.classList.remove('hidden');
+            btn.disabled = false; btn.innerHTML = '<span>PEDIR OUTRA SUGESTÃO</span>';
+        }
+        window.openAiChefModal = function(){ document.getElementById('modal-ai-chef').classList.remove('hidden'); document.getElementById('ai-chef-result').classList.add('hidden'); document.getElementById('ai-chef-input').value=''; }
+        window.closeAiChefModal = function(){ document.getElementById('modal-ai-chef').classList.add('hidden'); }
+        window.closeCartAi = function() { document.getElementById('cart-ai-response').classList.add('hidden'); }
+        window.callGemini = async function(p, s) { try { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:p}]}], systemInstruction:{parts:[{text:s}]}}) }); const d = await r.json(); return d.candidates?.[0]?.content?.parts?.[0]?.text || "Erro IA"; } catch(e) { return "IA offline"; } }
 
         window.openHistoryEditModal = function(date, dataObj) {
             document.getElementById("modal-history-edit").classList.remove("hidden");
@@ -1103,6 +1365,122 @@
             window.openHistoryModal(); window.updateAdminStats();
         };
 
+        // ===============================
+        // BACKUP / RESTORE (JSON)
+        // ===============================
+        window.getBackupPayload = function() {
+            const payload = {
+                meta: {
+                    app: "DEL8_LOCAL_SYSTEM",
+                    version: "1.0",
+                    exportedAt: new Date().toISOString()
+                },
+                del8ServerUrl: localStorage.getItem("del8ServerUrl") || "",
+                del8WhatsappNumber: localStorage.getItem("del8WhatsappNumber") || "5585999999999",
+                del8MenuData: JSON.parse(localStorage.getItem("del8MenuData") || "null"),
+                del8LocalOrders: JSON.parse(localStorage.getItem("del8LocalOrders") || "[]"),
+                del8ArchivedOrders: JSON.parse(localStorage.getItem("del8ArchivedOrders") || "[]"),
+                del8DailyOverrides: JSON.parse(localStorage.getItem("del8DailyOverrides") || "{}"),
+                del8PromoConfig: JSON.parse(localStorage.getItem("del8PromoConfig") || "null"),
+                isAdminLoggedIn: localStorage.getItem("isAdminLoggedIn") || "false",
+            };
+
+            // Fallback seguro: se menu vier vazio/quebrado, leva o menu atual em memória
+            if (!payload.del8MenuData || typeof payload.del8MenuData !== "object") {
+                payload.del8MenuData = window.menuData || null;
+            }
+
+            return payload;
+        };
+
+        window.exportFullBackup = function() {
+            try {
+                const payload = window.getBackupPayload();
+                const json = JSON.stringify(payload, null, 2);
+
+                const stamp = new Date().toLocaleDateString("pt-BR").replaceAll("/", "-");
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+                link.download = `DEL8-backup-${stamp}.json`;
+                link.click();
+
+                window.showToast("Backup exportado ✅");
+            } catch (e) {
+                alert("Falha ao exportar backup.");
+                console.error(e);
+            }
+        };
+
+        window.importFullBackup = function(ev) {
+            const file = ev?.target?.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const raw = e.target.result;
+                    const data = JSON.parse(raw);
+
+                    // validação mínima
+                    const looksValid =
+                        data &&
+                        typeof data === "object" &&
+                        (data.meta?.app === "DEL8_LOCAL_SYSTEM" || data.del8MenuData || data.del8LocalOrders || data.del8ArchivedOrders);
+
+                    if (!looksValid) {
+                        alert("Esse arquivo não parece um backup válido do DEL8.");
+                        return;
+                    }
+
+                    if (!confirm("IMPORTAR BACKUP?\n\nIsso vai SUBSTITUIR os dados atuais do sistema.")) return;
+
+                    // aplica restore
+                    if (typeof data.del8ServerUrl === "string") localStorage.setItem("del8ServerUrl", data.del8ServerUrl);
+                    if (typeof data.del8WhatsappNumber === "string") localStorage.setItem("del8WhatsappNumber", data.del8WhatsappNumber);
+                    if (data.del8MenuData && typeof data.del8MenuData === "object") localStorage.setItem("del8MenuData", JSON.stringify(data.del8MenuData));
+                    if (Array.isArray(data.del8LocalOrders)) localStorage.setItem("del8LocalOrders", JSON.stringify(data.del8LocalOrders));
+                    if (Array.isArray(data.del8ArchivedOrders)) localStorage.setItem("del8ArchivedOrders", JSON.stringify(data.del8ArchivedOrders));
+                    if (data.del8DailyOverrides && typeof data.del8DailyOverrides === "object") localStorage.setItem("del8DailyOverrides", JSON.stringify(data.del8DailyOverrides));
+                    if (data.del8PromoConfig && typeof data.del8PromoConfig === "object") localStorage.setItem("del8PromoConfig", JSON.stringify(data.del8PromoConfig));
+                    if (typeof data.isAdminLoggedIn === "string") localStorage.setItem("isAdminLoggedIn", data.isAdminLoggedIn);
+
+                    // atualiza estado em memória (pra refletir na UI sem precisar “adivinhar”)
+                    window.serverUrl = localStorage.getItem("del8ServerUrl") || "";
+                    window.whatsappNumber = localStorage.getItem("del8WhatsappNumber") || "5585999999999";
+                    window.menuData = JSON.parse(localStorage.getItem("del8MenuData")) || window.menuData;
+                    window.localOrders = JSON.parse(localStorage.getItem("del8LocalOrders")) || [];
+                    window.archivedOrders = JSON.parse(localStorage.getItem("del8ArchivedOrders")) || [];
+                    window.dailyOverrides = JSON.parse(localStorage.getItem("del8DailyOverrides")) || {};
+                    window.promoConfig = JSON.parse(localStorage.getItem("del8PromoConfig")) || window.promoConfig;
+
+                    // atualiza UI
+                    window.updateConnectionStatus();
+                    const waInput = document.getElementById("whatsapp-number-input");
+                    if (waInput) waInput.value = window.whatsappNumber;
+                    const serverInput = document.getElementById("server-url-input");
+                    if (serverInput) serverInput.value = window.serverUrl;
+
+                    window.updatePromoStatusUI();
+
+                    window.renderMenu("all");
+                    window.updateCartUI();
+                    await window.updateAdminStats();
+
+                    window.showToast("Backup importado ✅");
+                    alert("Backup importado com sucesso!");
+                } catch (err) {
+                    alert("Falha ao importar: arquivo inválido ou corrompido.");
+                    console.error(err);
+                } finally {
+                    // limpa input pra poder importar o mesmo arquivo de novo
+                    const input = document.getElementById("backup-upload");
+                    if (input) input.value = "";
+                }
+            };
+
+            reader.readAsText(file);
+        };
+
         window.drag = function(ev, id) { ev.dataTransfer.setData("text/plain", id); ev.target.classList.add('dragging'); }
         window.allowDrop = function(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
         window.leaveDrop = function(ev) { ev.currentTarget.classList.remove('drag-over'); }
@@ -1124,6 +1502,21 @@
             if(waInput) waInput.value = window.whatsappNumber;
             const urlInput = document.getElementById('server-url-input');
             if(urlInput) urlInput.value = window.serverUrl;
+
+            // Preenche promo UI
+            const promoEnabled = document.getElementById("promo-enabled");
+            const promoStart = document.getElementById("promo-start");
+            const promoEnd = document.getElementById("promo-end");
+            const promoPrice = document.getElementById("promo-price");
+            const promoNameInput = document.getElementById("promo-name");
+
+            if (promoEnabled) promoEnabled.checked = !!window.promoConfig?.enabled;
+            if (promoStart) promoStart.value = window.promoConfig?.startAt || "";
+            if (promoEnd) promoEnd.value = window.promoConfig?.endAt || "";
+            if (promoPrice) promoPrice.value = String(window.promoConfig?.price ?? 10);
+            if (promoNameInput) promoNameInput.value = window.promoConfig?.promoName || "";
+
+            window.updatePromoStatusUI();
 
             window.initData(); // Fixed: call local function directly inside module
             window.renderMenu('all');

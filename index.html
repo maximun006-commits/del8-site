@@ -4,12 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
+    <meta name="application-name" content="DEL 8">
+    
     <title>DEL 8 - Sistema Local</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Righteous & Montserrat -->
     <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Importação do Cardápio Externo -->
+    <script src="menu_data.js"></script>
     
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #000000; color: #e5e7eb; overscroll-behavior-y: none; user-select: none; }
@@ -29,6 +39,7 @@
         .draggable { cursor: grab; touch-action: none; }
         .dragging { opacity: 0.5; background-color: #1f1f1f; }
         #loading-overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; pointer-events: none; }
+        /* Table Styles for History */
         .history-table th { text-align: left; padding: 8px; border-bottom: 1px solid #333; color: #f97316; font-family: 'Righteous', cursive; }
         .history-table td { padding: 8px; border-bottom: 1px solid #1f1f1f; font-size: 0.85rem; }
         .history-table tr:last-child td { border-bottom: none; }
@@ -36,7 +47,6 @@
 </head>
 <body class="safe-bottom">
 
-    <!-- Loading Screen -->
     <div id="loading-overlay">
         <div class="text-center">
             <svg class="icon text-orange-500 text-6xl animate-pulse mb-4" viewBox="0 0 24 24"><path d="M20 10C20 5 4 5 4 10H20ZM3 11H21V14H3V11ZM4 15H20V18C20 20 4 20 4 18V15Z"></path></svg>
@@ -114,6 +124,33 @@
                     <label class="text-[10px] text-gray-400 uppercase font-bold">Endereço do Servidor</label>
                     <div class="flex gap-2"><input type="text" id="server-url-input" class="flex-1 bg-black border border-gray-600 rounded p-1 text-xs text-white" placeholder="Deixe vazio para modo local"><button onclick="window.saveServerConfig()" class="bg-blue-600 text-white text-xs px-3 rounded font-bold">SALVAR</button></div>
                     <p id="server-status-msg" class="text-[10px] text-gray-500">Atual: <span id="current-server-display">Local (Offline)</span></p>
+
+                    <!-- Configuração do WhatsApp -->
+                    <label class="text-[10px] text-gray-400 uppercase font-bold mt-2">Número WhatsApp (Ex: 55859...)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="whatsapp-number-input" class="flex-1 bg-black border border-gray-600 rounded p-1 text-xs text-white" placeholder="5585999999999">
+                        <button onclick="window.saveWhatsappConfig()" class="bg-green-600 hover:bg-green-500 text-white text-xs px-3 rounded font-bold transition">SALVAR</button>
+                    </div>
+
+                    <!-- BACKUP / RESTORE -->
+                    <div class="mt-2 pt-2 border-t border-gray-700/60">
+                        <label class="text-[10px] text-gray-400 uppercase font-bold">Backup do Sistema (JSON)</label>
+
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="window.exportFullBackup()" class="flex-1 text-xs bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded font-bold">
+                            Exportar Backup
+                            </button>
+
+                            <label class="flex-1 text-xs bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700 px-3 py-2 rounded font-bold cursor-pointer text-center">
+                            Importar Backup
+                            <input id="backup-upload" type="file" accept=".json" class="hidden" onchange="window.importFullBackup(event)">
+                            </label>
+                        </div>
+
+                        <p class="text-[10px] text-gray-500 mt-2">
+                            *Backup salva: cardápio, pedidos locais, histórico, relatório (overrides), config do servidor e login admin.
+                        </p>
+                    </div>
                 </div>
                 
                 <div class="flex justify-between items-center mb-4">
@@ -227,9 +264,7 @@
                     <tbody id="daily-history-body" class="text-gray-300"></tbody>
                 </table>
             </div>
-
             <div class="mt-4 pt-4 border-t border-gray-800 flex gap-3">
-                 <!-- Botão Apagar Selecionados -->
                 <button onclick="window.deleteSelectedHistory()" class="flex-1 bg-red-900/60 hover:bg-red-800 text-red-100 border border-red-800 py-2 rounded font-bold text-xs">Apagar Selecionados</button>
                 <button onclick="window.exportHistorySummary()" class="flex-1 bg-blue-900/50 hover:bg-blue-800 text-blue-200 border border-blue-800 py-2 rounded font-bold text-xs">Exportar Resumo</button>
                 <button onclick="window.closeHistoryModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 py-2 rounded font-bold text-xs">Fechar</button>
@@ -257,6 +292,7 @@
       </div>
     </div>
 
+    <!-- ... (Menu Edit Modal remains same) ... -->
     <div id="modal-menu-edit" class="fixed inset-0 bg-black/95 z-[80] hidden flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-gray-900 rounded-xl max-w-md w-full p-6 relative border border-gray-700 shadow-2xl">
             <button onclick="window.closeMenuEditModal()" class="absolute top-3 right-3 text-gray-500 text-xl">&times;</button>
@@ -284,6 +320,7 @@
         window.db = null; window.auth = null; window.appId = null; window.userId = null;
         
         window.serverUrl = localStorage.getItem('del8ServerUrl') || "";
+        window.whatsappNumber = localStorage.getItem('del8WhatsappNumber') || "5585999999999";
         window.cart = [];
         window.localOrders = JSON.parse(localStorage.getItem('del8LocalOrders')) || [];
         window.archivedOrders = JSON.parse(localStorage.getItem('del8ArchivedOrders')) || [];
@@ -291,20 +328,41 @@
         window.modalQtyVal = 1;
         window.dailyOverrides = JSON.parse(localStorage.getItem("del8DailyOverrides")) || {};
 
-        const DEFAULT_MENU = {
-            "BURGER REGRETS": [
-                { id: "BR1", nome: `Simple <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "O clássico infalível: Pão, carne e queijo", preco: 18.00 },
-                { id: "BR2", nome: `Pikle <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Com picles artesanais e molho da casa", preco: 22.00 },
-                { id: "BR3", nome: `Onion <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Cebola caramelizada e cebola crispy", preco: 25.00 },
-                { id: "BR4", nome: `Bacon <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Bacon crocante e molho de bacon", preco: 28.00 },
-                { id: "BR5", nome: `Melt <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Muito queijo cheddar derretido", preco: 30.00 },
-                { id: "BR6", nome: `Rings <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Com anéis de cebola (Onion Rings) dentro", preco: 27.00 },
-                { id: "BR7", nome: `Solemar <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Carne de sol, queijo coalho e manteiga", preco: 33.00 },
-                { id: "BR8", nome: `Monster <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Monstruoso: Carne dupla, bacon e cheddar", preco: 38.00 },
-            ],
-            "ACOMPANHAMENTOS": [{ id: "AC1", nome: "Fries Clássica", desc: "Porção de batata frita clássica", preco: 10.00 },{ id: "AC2", nome: "Fries Turbinada", desc: "Porção de batata frita coberta de bacon", preco: 15.00 },{ id: "AC3", nome: "Onion Rings", desc: "Porção de anéis de cebola empanados", preco: 20.00 },{ id: "AC4", nome: "Onion Rings 2.0", desc: "Anéis de cebola cobertos com coração de carne de sol", preco: 28.00 },],
-            "BEBIDAS": [{ id: "BB1", nome: "Refrigerante Lata", desc: "350ml - Consultar sabores", preco: 6.00 },{ id: "BB2", nome: "Refrigerante 1L", desc: "1 Litro - Consultar sabores", preco: 10.00 },]
-        };
+        // Load dynamically from menu_data.js if available, otherwise use fallback
+        let DEFAULT_MENU = {};
+        try {
+            if (typeof MENU_DATA !== 'undefined') {
+                MENU_DATA.forEach(item => {
+                    if (!DEFAULT_MENU[item.category]) {
+                        DEFAULT_MENU[item.category] = [];
+                    }
+                    DEFAULT_MENU[item.category].push({
+                        id: item.id,
+                        nome: item.name,
+                        desc: item.desc,
+                        preco: item.price
+                    });
+                });
+            } else {
+                 throw new Error("MENU_DATA is undefined");
+            }
+        } catch (e) {
+            console.warn("menu_data.js não carregado corretamente, usando fallback:", e);
+            DEFAULT_MENU = {
+                "BURGER REGRETS": [
+                    { id: "BR1", nome: `Simple <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "O clássico infalível: Pão, carne e queijo", preco: 18.00 },
+                    { id: "BR2", nome: `Pikle <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Com picles artesanais e molho da casa", preco: 22.00 },
+                    { id: "BR3", nome: `Onion <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Cebola caramelizada e cebola crispy", preco: 25.00 },
+                    { id: "BR4", nome: `Bacon <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Bacon crocante e molho de bacon", preco: 28.00 },
+                    { id: "BR5", nome: `Melt <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Muito queijo cheddar derretido", preco: 30.00 },
+                    { id: "BR6", nome: `Rings <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Com anéis de cebola (Onion Rings) dentro", preco: 27.00 },
+                    { id: "BR7", nome: `Solemar <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Carne de sol, queijo coalho e manteiga", preco: 33.00 },
+                    { id: "BR8", nome: `Monster <span class="text-xl text-orange-500 font-bold ml-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.9)]">8</span>`, desc: "Monstruoso: Carne dupla, bacon e cheddar", preco: 38.00 },
+                ],
+                "ACOMPANHAMENTOS": [{ id: "AC1", nome: "Fries Clássica", desc: "Porção de batata frita clássica", preco: 10.00 },{ id: "AC2", nome: "Fries Turbinada", desc: "Porção de batata frita coberta de bacon", preco: 15.00 },{ id: "AC3", nome: "Onion Rings", desc: "Porção de anéis de cebola empanados", preco: 20.00 },{ id: "AC4", nome: "Onion Rings 2.0", desc: "Anéis de cebola cobertos com coração de carne de sol", preco: 28.00 },],
+                "BEBIDAS": [{ id: "BB1", nome: "Refrigerante Lata", desc: "350ml - Consultar sabores", preco: 6.00 },{ id: "BB2", nome: "Refrigerante 1L", desc: "1 Litro - Consultar sabores", preco: 10.00 },]
+            };
+        }
 
         window.menuData = JSON.parse(localStorage.getItem('del8MenuData')) || DEFAULT_MENU;
 
@@ -538,19 +596,41 @@
             if(window.serverUrl.endsWith('/')) window.serverUrl = window.serverUrl.slice(0, -1);
             localStorage.setItem('del8ServerUrl', window.serverUrl);
             window.updateConnectionStatus();
-            initData(); // Call local function
+            window.initData(); // Call local function
             alert("Configuração salva!");
         }
+
+        window.saveWhatsappConfig = function() {
+            const input = document.getElementById('whatsapp-number-input');
+            const num = input.value.replace(/\D/g, ''); // Remove tudo que não for número
+            if (num) {
+                window.whatsappNumber = num;
+                localStorage.setItem('del8WhatsappNumber', num);
+                window.showToast("Número do WhatsApp salvo!");
+            } else {
+                alert("Digite um número válido.");
+            }
+        }
+
         window.updateConnectionStatus = function() {
             const dot = document.getElementById('status-dot');
             const text = document.getElementById('status-text');
             const display = document.getElementById('current-server-display');
-            if(window.serverUrl) { dot.classList.replace('status-offline','status-online'); text.innerText = "SERVER"; display.innerText = window.serverUrl; } 
-            else { dot.classList.replace('status-online','status-offline'); text.innerText = "LOCAL"; display.innerText = "Local (Offline)"; }
+            if (window.serverUrl) {
+                dot.classList.remove('bg-red-500');
+                dot.classList.add('bg-green-500');
+                text.innerText = "SERVER";
+                display.innerText = window.serverUrl;
+            } else {
+                dot.classList.remove('bg-green-500');
+                dot.classList.add('bg-red-500');
+                text.innerText = "LOCAL";
+                display.innerText = "Local (Offline)";
+            }
         }
         
         // Define initData locally to be used in module scope
-        const initData = async function() {
+        window.initData = async function() {
             if(window.serverUrl) {
                 try {
                     const res = await fetch(`${window.serverUrl}/api/menu`);
@@ -608,12 +688,41 @@
                 return alert("Por favor, digite seu nome para finalizar.");
             }
             if(window.cart.length===0) return alert("Carrinho vazio.");
+            
             const total = window.cart.reduce((a,b)=>a+(b.preco*b.qty),0);
-            const items = window.cart.map(i => { const d=document.createElement('div'); d.innerHTML=i.nome; return `${i.qty}x ${d.innerText}`; }).join(', ');
-            const order = { id: Date.now().toString().slice(-6), date: new Date().toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), timestamp: Date.now(), customer: name, items, total, status: 'Pendente' };
+            
+            // Prepara a string de itens (agora incluindo observações, se houver)
+            const items = window.cart.map(i => { 
+                const d=document.createElement('div'); d.innerHTML=i.nome; 
+                let txt = `${i.qty}x ${d.innerText}`;
+                if (i.obs) txt += ` (Obs: ${i.obs})`;
+                return txt;
+            }).join(', ');
+            
+            const orderId = Date.now().toString().slice(-6);
+            const order = { id: orderId, date: new Date().toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), timestamp: Date.now(), customer: name, items, total, status: 'Pendente' };
+            
+            // Salva no sistema local (Painel Admin)
             await window.sendOrder(order);
-            window.cart = []; nameInput.value = ''; window.updateCartUI();
-            alert("Pedido enviado!"); window.switchTab('menu');
+            
+            // --- INTEGRAÇÃO WHATSAPP ---
+            const phone = window.whatsappNumber; // Usa o número configurado
+            const msg = 
+                `🍔 *NOVO PEDIDO - DEL8* (#${orderId})\n` +
+                `👤 Cliente: ${name}\n` +
+                `🧾 Itens: ${items}\n` +
+                `💰 Total: R$ ${total.toFixed(2)}\n` +
+                `🕒 ${order.time}\n` +
+                `\n✅ Confirme recebimento e prazo, por favor.`;
+
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+            window.open(url, "_blank"); // Abre o WhatsApp em nova aba/app
+            
+            // Limpa o carrinho e reseta a UI
+            window.cart = []; 
+            nameInput.value = ''; 
+            window.updateCartUI();
+            window.switchTab('menu');
         }
         window.toggleOrderStatus = function(id) {
              let order = window.localOrders.find(o => o.id == id);
@@ -818,28 +927,182 @@
         window.deleteSelected = function(){if(!confirm('Apagar selecionados?'))return; const ids=Array.from(document.querySelectorAll('.order-checkbox:checked')).map(c=>parseInt(c.value)); if(window.serverUrl) { } else { window.localOrders=window.localOrders.filter(o=>!ids.includes(o.id)); localStorage.setItem('del8LocalOrders',JSON.stringify(window.localOrders)); window.updateAdminStats(); } }
         window.toggleSelection = function(){const btn=document.getElementById('btn-delete-selected'); if(!btn)return; const c=document.querySelectorAll('.order-checkbox:checked').length; btn.classList.toggle('hidden', c===0); if(c>0){const counter=document.getElementById('delete-count'); if(counter)counter.innerText=c;}}
         window.clearAllHistoryManual = function() { if(confirm("Deseja mesmo limpar todo o histórico atual?")) { window.internalClearOrders(); } }
-        window.analyzeCart = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-analyze-cart'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await window.callGemini("Analise", `Garçom sarcástico DEL 8. Pedido: ${window.cart.map(i=>i.nome).join(', ')}. Comente curto.`); document.getElementById('cart-ai-text').innerText=r; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
-        window.generateDietExcuse = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-diet-excuse'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await window.callGemini("Desculpa", `Advogado engraçado. Cliente comeu: ${window.cart.map(i=>i.nome).join(', ')}. Desculpa p/ nutricionista. Curta.`); document.getElementById('cart-ai-text').innerText=`🤥 "${r}"`; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
-        window.generateSlogan = async function(){const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await window.callGemini("Slogan", "Slogan curto/moderno/neon DEL 8."); alert(`📢 "${r.replace(/["']/g,"")}"`); b.innerText=h; b.disabled=false;}
-        window.generateAIDescription = async function(){const n=document.getElementById('edit-name').value; if(!n)return alert('Nome?'); const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await window.callGemini("Descrição", `Mkt DEL 8. Descrição curta para: ${n}`); document.getElementById('edit-desc').value=r.replace(/["']/g,""); b.innerText=h; b.disabled=false;}
-        window.askChefAI = async function() {
-            const userInput = document.getElementById('ai-chef-input').value.trim();
-            if (!userInput) return;
-            const btn = document.getElementById('btn-ask-chef');
-            const resultDiv = document.getElementById('ai-chef-result');
-            btn.disabled = true; btn.innerHTML = '<svg class="icon animate-spin" viewBox="0 0 24 24"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"></path></svg> Pensando...';
-            const menuContext = JSON.stringify(window.menuData); 
-            const systemPrompt = `Você é a "Chef IA" da hamburgueria "DEL 8". O menu: ${menuContext}. Sugira 1-2 itens com base em: "${userInput}". Curto e divertido.`;
-            const response = await window.callGemini(userInput, systemPrompt);
-            resultDiv.innerHTML = marked.parse(response); resultDiv.classList.remove('hidden');
-            btn.disabled = false; btn.innerHTML = '<span>PEDIR OUTRA SUGESTÃO</span>';
-        }
-        window.openAiChefModal = function(){ document.getElementById('modal-ai-chef').classList.remove('hidden'); document.getElementById('ai-chef-result').classList.add('hidden'); document.getElementById('ai-chef-input').value=''; }
-        window.closeAiChefModal = function(){ document.getElementById('modal-ai-chef').classList.add('hidden'); }
-        window.closeCartAi = function() { document.getElementById('cart-ai-response').classList.add('hidden'); }
-        window.callGemini = async function(p, s) { try { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:p}]}], systemInstruction:{parts:[{text:s}]}}) }); const d = await r.json(); return d.candidates?.[0]?.content?.parts?.[0]?.text || "Erro IA"; } catch(e) { return "IA offline"; } }
 
-        // Drag Polyfill
+        // ===============================
+        // BACKUP / RESTORE (JSON)
+        // ===============================
+        window.getBackupPayload = function() {
+            const payload = {
+                meta: {
+                    app: "DEL8_LOCAL_SYSTEM",
+                    version: "1.0",
+                    exportedAt: new Date().toISOString()
+                },
+                del8ServerUrl: localStorage.getItem("del8ServerUrl") || "",
+                del8WhatsappNumber: localStorage.getItem("del8WhatsappNumber") || "5585999999999",
+                del8MenuData: JSON.parse(localStorage.getItem("del8MenuData") || "null"),
+                del8LocalOrders: JSON.parse(localStorage.getItem("del8LocalOrders") || "[]"),
+                del8ArchivedOrders: JSON.parse(localStorage.getItem("del8ArchivedOrders") || "[]"),
+                del8DailyOverrides: JSON.parse(localStorage.getItem("del8DailyOverrides") || "{}"),
+                isAdminLoggedIn: localStorage.getItem("isAdminLoggedIn") || "false",
+            };
+
+            // Fallback seguro: se menu vier vazio/quebrado, leva o menu atual em memória
+            if (!payload.del8MenuData || typeof payload.del8MenuData !== "object") {
+                payload.del8MenuData = window.menuData || null;
+            }
+
+            return payload;
+        };
+
+        window.exportFullBackup = function() {
+            try {
+                const payload = window.getBackupPayload();
+                const json = JSON.stringify(payload, null, 2);
+
+                const stamp = new Date().toLocaleDateString("pt-BR").replaceAll("/", "-");
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+                link.download = `DEL8-backup-${stamp}.json`;
+                link.click();
+
+                window.showToast("Backup exportado ✅");
+            } catch (e) {
+                alert("Falha ao exportar backup.");
+                console.error(e);
+            }
+        };
+
+        window.importFullBackup = function(ev) {
+            const file = ev?.target?.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const raw = e.target.result;
+                    const data = JSON.parse(raw);
+
+                    // validação mínima
+                    const looksValid =
+                        data &&
+                        typeof data === "object" &&
+                        (data.meta?.app === "DEL8_LOCAL_SYSTEM" || data.del8MenuData || data.del8LocalOrders || data.del8ArchivedOrders);
+
+                    if (!looksValid) {
+                        alert("Esse arquivo não parece um backup válido do DEL8.");
+                        return;
+                    }
+
+                    if (!confirm("IMPORTAR BACKUP?\n\nIsso vai SUBSTITUIR os dados atuais do sistema.")) return;
+
+                    // aplica restore
+                    if (typeof data.del8ServerUrl === "string") localStorage.setItem("del8ServerUrl", data.del8ServerUrl);
+                    if (typeof data.del8WhatsappNumber === "string") localStorage.setItem("del8WhatsappNumber", data.del8WhatsappNumber);
+                    if (data.del8MenuData && typeof data.del8MenuData === "object") localStorage.setItem("del8MenuData", JSON.stringify(data.del8MenuData));
+                    if (Array.isArray(data.del8LocalOrders)) localStorage.setItem("del8LocalOrders", JSON.stringify(data.del8LocalOrders));
+                    if (Array.isArray(data.del8ArchivedOrders)) localStorage.setItem("del8ArchivedOrders", JSON.stringify(data.del8ArchivedOrders));
+                    if (data.del8DailyOverrides && typeof data.del8DailyOverrides === "object") localStorage.setItem("del8DailyOverrides", JSON.stringify(data.del8DailyOverrides));
+                    if (typeof data.isAdminLoggedIn === "string") localStorage.setItem("isAdminLoggedIn", data.isAdminLoggedIn);
+
+                    // atualiza estado em memória (pra refletir na UI sem precisar “adivinhar”)
+                    window.serverUrl = localStorage.getItem("del8ServerUrl") || "";
+                    window.whatsappNumber = localStorage.getItem("del8WhatsappNumber") || "5585999999999";
+                    window.menuData = JSON.parse(localStorage.getItem("del8MenuData")) || window.menuData;
+                    window.localOrders = JSON.parse(localStorage.getItem("del8LocalOrders")) || [];
+                    window.archivedOrders = JSON.parse(localStorage.getItem("del8ArchivedOrders")) || [];
+                    window.dailyOverrides = JSON.parse(localStorage.getItem("del8DailyOverrides")) || {};
+
+                    // atualiza UI
+                    window.updateConnectionStatus();
+                    const waInput = document.getElementById("whatsapp-number-input");
+                    if (waInput) waInput.value = window.whatsappNumber;
+                    const serverInput = document.getElementById("server-url-input");
+                    if (serverInput) serverInput.value = window.serverUrl;
+
+                    window.renderMenu("all");
+                    window.updateCartUI();
+                    await window.updateAdminStats();
+
+                    window.showToast("Backup importado ✅");
+                    alert("Backup importado com sucesso!");
+                } catch (err) {
+                    alert("Falha ao importar: arquivo inválido ou corrompido.");
+                    console.error(err);
+                } finally {
+                    // limpa input pra poder importar o mesmo arquivo de novo
+                    const input = document.getElementById("backup-upload");
+                    if (input) input.value = "";
+                }
+            };
+
+            reader.readAsText(file);
+        };
+
+        // --- NEW EDIT HISTORY FUNCTIONS ---
+        window.dailyOverrides = JSON.parse(localStorage.getItem("del8DailyOverrides")) || {};
+
+        window.openHistoryEditModal = function(date, dataObj) {
+            document.getElementById("modal-history-edit").classList.remove("hidden");
+
+            document.getElementById("hist-edit-original-date").value = date;
+
+            const override = window.dailyOverrides[date] || {};
+            document.getElementById("hist-edit-date").value = override.date || date;
+            document.getElementById("hist-edit-peds").value = (override.count ?? dataObj.count);
+            document.getElementById("hist-edit-prods").value = (override.items ?? dataObj.items);
+            document.getElementById("hist-edit-total").value = (override.total ?? dataObj.total);
+        };
+
+        window.closeHistoryEditModal = function() {
+            document.getElementById("modal-history-edit").classList.add("hidden");
+        };
+
+        window.saveHistoryEdit = function() {
+            const originalDate = document.getElementById("hist-edit-original-date").value;
+            const newDate = document.getElementById("hist-edit-date").value.trim();
+
+            const count = parseInt(document.getElementById("hist-edit-peds").value || "0", 10);
+            const items = parseInt(document.getElementById("hist-edit-prods").value || "0", 10);
+            const total = parseFloat(document.getElementById("hist-edit-total").value || "0");
+
+            // salva override
+            // (se o cara mudar a data, move a chave)
+            if (newDate !== originalDate) {
+                delete window.dailyOverrides[originalDate];
+            }
+
+            window.dailyOverrides[newDate] = { date: newDate, count, items, total };
+
+            localStorage.setItem("del8DailyOverrides", JSON.stringify(window.dailyOverrides));
+            window.closeHistoryEditModal();
+            window.openHistoryModal(); // re-render
+        };
+
+        window.removeHistoryEdit = function() {
+            const originalDate = document.getElementById("hist-edit-original-date").value;
+            if (!confirm("Apagar ajuste desse dia?")) return;
+
+            delete window.dailyOverrides[originalDate];
+            localStorage.setItem("del8DailyOverrides", JSON.stringify(window.dailyOverrides));
+
+            window.closeHistoryEditModal();
+            window.openHistoryModal(); // re-render
+        };
+
+        window.deleteSelectedHistory = function () {
+            const checked = Array.from(document.querySelectorAll(".hist-checkbox:checked")).map(c => c.value);
+            if (checked.length === 0) return alert("Selecione pelo menos um dia.");
+            if (!confirm(`Apagar ${checked.length} dia(s) do histórico?`)) return;
+            window.archivedOrders = window.archivedOrders.filter(o => !checked.includes(o.date));
+            window.localOrders = window.localOrders.filter(o => !checked.includes(o.date));
+            localStorage.setItem("del8ArchivedOrders", JSON.stringify(window.archivedOrders));
+            localStorage.setItem("del8LocalOrders", JSON.stringify(window.localOrders));
+            checked.forEach(date => delete window.dailyOverrides[date]);
+            localStorage.setItem("del8DailyOverrides", JSON.stringify(window.dailyOverrides));
+            window.openHistoryModal(); window.updateAdminStats();
+        };
+
         window.drag = function(ev, id) { ev.dataTransfer.setData("text/plain", id); ev.target.classList.add('dragging'); }
         window.allowDrop = function(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
         window.leaveDrop = function(ev) { ev.currentTarget.classList.remove('drag-over'); }
@@ -855,7 +1118,14 @@
         document.addEventListener('DOMContentLoaded', () => {
             const passInput = document.getElementById('admin-pass');
             if(passInput) passInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.checkAdmin(); });
-            initData(); // Fixed: call local function directly inside module
+            
+            // Preenche os campos de config no painel
+            const waInput = document.getElementById('whatsapp-number-input');
+            if(waInput) waInput.value = window.whatsappNumber;
+            const urlInput = document.getElementById('server-url-input');
+            if(urlInput) urlInput.value = window.serverUrl;
+
+            window.initData(); // Fixed: call local function directly inside module
             window.renderMenu('all');
             window.updateCartUI(); 
         });

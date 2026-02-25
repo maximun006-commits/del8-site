@@ -344,10 +344,11 @@
         </div>
 
         <label class="text-xs text-gray-400 font-bold uppercase tracking-wide">Número / Nome da Mesa</label>
-        <input id="qr-mesa" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white mt-1 focus:border-orange-500" placeholder="Ex: 12 ou Varanda" />
+        <input id="qr-mesa" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white mt-1 mb-3 focus:border-orange-500" placeholder="Ex: 12 ou Varanda" />
 
-        <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wide mt-3 block">Link do seu site (Domínio Público)</label>
-        <input id="qr-base-url" class="w-full bg-black border border-gray-700 rounded-lg p-2 text-white mt-1 focus:border-orange-500 text-xs" placeholder="Ex: https://meuburger.netlify.app (Deixe vazio para usar o atual)" />
+        <label class="text-xs text-gray-400 font-bold uppercase tracking-wide">O seu Link / Domínio (Opcional)</label>
+        <input id="qr-domain" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white mt-1 focus:border-orange-500" placeholder="Ex: meuburger.vercel.app" />
+        <p class="text-[10px] text-gray-500 mt-1">Deixe em branco para usar o endereço atual (ideal para testes locais).</p>
 
         <button onclick="window.generateMesaQR()" class="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg transition shadow-lg">
           Gerar QR Code
@@ -1242,39 +1243,50 @@
             m.classList.add("hidden"); m.classList.remove("flex");
         };
 
-        window.generateMesaQR = function(){
+        window.generateMesaQR = function () {
             const mesa = (document.getElementById("qr-mesa")?.value || "").trim();
-            if(!mesa) return alert("Digite o número ou nome da mesa para gerar o código.");
-            
-            let baseUrlStr = (document.getElementById("qr-base-url")?.value || "").trim();
-            let u;
+            if (!mesa) return alert("Digite a mesa.");
 
-            try {
-                if (baseUrlStr) {
-                    // Garante que tem http/https
-                    if (!baseUrlStr.startsWith('http')) baseUrlStr = 'https://' + baseUrlStr;
-                    u = new URL(baseUrlStr);
-                } else {
-                    // Pega a URL atual se o campo estiver vazio
-                    u = new URL(window.location.href);
+            const customDomain = (document.getElementById("qr-domain")?.value || "").trim();
+
+            // ✅ 1) Base oficial (evita usercontent.goog / links quebrados)
+            const OFFICIAL_BASE = "https://del8-site.vercel.app/";
+
+            let baseToUse = OFFICIAL_BASE;
+
+            // ✅ 2) Se o admin quiser testar outro domínio, aceita override
+            if (customDomain) {
+                let d = customDomain;
+
+                // Se digitou só "del8-site.vercel.app", vira "https://del8-site.vercel.app/"
+                if (!/^https?:\/\//i.test(d)) d = "https://" + d;
+
+                // garante barra no final (pra URL ficar raiz)
+                if (!d.endsWith("/")) d += "/";
+
+                try {
+                    // valida
+                    baseToUse = new URL(d).origin + "/";
+                } catch (e) {
+                    return alert("Domínio inválido! Ex: del8-site.vercel.app");
                 }
-            } catch(e) {
-                return alert("O link base fornecido é inválido. Verifique o formato.");
             }
 
-            // Remove qualquer lixo de hash e garante query certa
-            u.hash = "";
+            // ✅ 3) Monta a URL final SEM herdar path/query antigos
+            const u = new URL(baseToUse);
             u.searchParams.set("mesa", mesa);
 
             const box = document.getElementById("qr-box");
+            if (!box) return alert("Elemento #qr-box não encontrado.");
             box.innerHTML = "";
-            new QRCode(box, { 
-                text: u.toString(), 
-                width: 200, 
-                height: 200,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
+
+            new QRCode(box, {
+                text: u.toString(),
+                width: 220,
+                height: 220,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
             });
         };
 

@@ -18,6 +18,8 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- QR Code Generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- Importação do Cardápio Externo -->
     <script src="menu_data.js"></script>
     
@@ -59,6 +61,7 @@
             <div class="flex items-center space-x-2">
                 <svg class="icon text-orange-500 text-3xl" viewBox="0 0 24 24"><path d="M20 10C20 5 4 5 4 10H20ZM3 11H21V14H3V11ZM4 15H20V18C20 20 4 20 4 18V15Z"></path></svg>
                 <h1 class="text-2xl font-bold tracking-wider text-white">DEL<span class="text-orange-500">8</span></h1>
+                <span id="header-mesa-badge" class="hidden bg-orange-600/20 border border-orange-500 text-orange-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ml-2">Mesa</span>
             </div>
             <div class="flex items-center space-x-4">
                 <div id="connection-status" class="flex items-center gap-1 text-[10px] text-gray-500 font-mono">
@@ -109,7 +112,7 @@
                 <!-- Oções de Entrega e Pagamento -->
                 <div class="flex gap-2 mb-2">
                     <select id="order-delivery" onchange="window.toggleAddress()" class="flex-1 bg-black border border-gray-700 rounded p-2 text-white text-sm focus:border-orange-500 outline-none">
-                        <option value="Retirada">Retirada no Local</option>
+                        <option value="Retirada">Retirada / Consumo no Local</option>
                         <option value="Entrega">Entrega (Delivery)</option>
                     </select>
                     <select id="order-payment" class="flex-1 bg-black border border-gray-700 rounded p-2 text-white text-sm focus:border-orange-500 outline-none">
@@ -133,7 +136,7 @@
                 <input type="password" id="admin-pass" class="w-full bg-black border border-gray-700 rounded p-3 mb-4 text-center text-white focus:border-orange-500" placeholder="Digite a Senha">
                 <button onclick="window.checkAdmin()" class="w-full bg-orange-600 text-white font-bold py-3 rounded hover:bg-orange-500">ENTRAR</button>
                 <p id="login-error" class="text-red-500 text-xs mt-3 hidden">Senha incorreta!</p>
-                <button onclick="window.switchTab('menu')" class="mt-4 text-xs text-gray-500 hover:text-white underline">Voltar ao Menu</button>
+                <button onclick="window.setMode('client')" class="mt-4 text-xs text-gray-500 hover:text-white underline">Voltar ao Menu</button>
             </div>
 
             <div id="admin-content-wrapper" class="hidden flex flex-col gap-2">
@@ -233,7 +236,9 @@
                     
                     <div class="flex justify-between items-end mb-3 border-b border-gray-800 pb-2">
                         <h3 class="font-bold text-gray-500 text-sm uppercase">Caixa Atual (<span id="stat-orders">0</span>)</h3>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 flex-wrap justify-end">
+                            <button onclick="window.switchTab('kds')" class="text-xs bg-orange-900/50 hover:bg-orange-800 text-orange-200 border border-orange-800 px-2 py-1 rounded font-bold">KDS</button>
+                            <button onclick="window.openQrModal()" class="text-xs bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 px-2 py-1 rounded font-bold">QR Mesas</button>
                             <button onclick="window.openHistoryModal()" class="text-xs bg-blue-900/50 hover:bg-blue-800 text-blue-200 border border-blue-800 px-2 py-1 rounded font-bold">Relatório</button>
                             <button onclick="window.exportToCSV()" class="text-xs bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 px-2 py-1 rounded flex items-center gap-1"><svg class="icon text-green-500" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"></path></svg> Exportar</button>
                             <button onclick="window.clearAllHistoryManual()" class="text-xs text-red-500 border border-red-900 px-2 py-1 rounded">Limpar</button>
@@ -265,11 +270,11 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                        <div class="bg-white/5 p-4 rounded-xl border border-gray-800">
                             <h4 class="text-orange-500 font-bold text-xs uppercase mb-3">Produtos Mais Vendidos (Qtd)</h4>
                             <canvas id="productsChart"></canvas>
                         </div>
-                        <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                        <div class="bg-white/5 p-4 rounded-xl border border-gray-800">
                             <h4 class="text-green-500 font-bold text-xs uppercase mb-3">Faturamento Estimado</h4>
                             <canvas id="revenueChart"></canvas>
                         </div>
@@ -277,9 +282,35 @@
                 </div>
             </div>
         </div>
+        
+        <!-- KDS (COZINHA) -->
+        <div id="view-kds" class="hidden animate-fade-in p-1">
+            <div class="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
+                <h2 class="text-2xl font-bold text-white flex items-center gap-2"><svg class="icon text-orange-500" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-12h2v6h-2zm0 8h2v2h-2z"></path></svg> COZINHA (KDS)</h2>
+                <div class="flex gap-2">
+                    <button onclick="window.kdsToggleSound()" class="text-xs bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 px-3 py-2 rounded font-bold transition">
+                        🔊 Som: <span id="kds-sound-label" class="text-orange-500">ON</span>
+                    </button>
+                    <button onclick="window.switchTab('admin')" class="text-xs bg-orange-600 hover:bg-orange-500 text-white px-3 py-2 rounded font-bold transition shadow-lg">
+                        Voltar p/ Admin
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                    <h3 class="text-orange-500 font-bold mb-3 border-b border-orange-500/30 pb-1 uppercase text-xs">Pendentes</h3>
+                    <div id="kds-pending" class="space-y-3"></div>
+                </div>
+                <div>
+                    <h3 class="text-green-500 font-bold mb-3 border-b border-green-500/30 pb-1 uppercase text-xs">Prontos</h3>
+                    <div id="kds-ready" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
     </main>
 
-    <nav class="fixed bottom-0 w-full bg-black border-t border-gray-900 safe-bottom z-50 h-16 flex items-center justify-around max-w-4xl mx-auto left-0 right-0">
+    <nav id="bottom-nav" class="fixed bottom-0 w-full bg-black border-t border-gray-900 safe-bottom z-50 h-16 flex items-center justify-around max-w-4xl mx-auto left-0 right-0">
         <button onclick="window.switchTab('menu')" id="nav-menu" class="nav-btn flex flex-col items-center text-orange-500 w-full"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"></path></svg><span class="text-xs font-bold">Menu</span></button>
         <button onclick="window.switchTab('cart')" id="nav-cart" class="nav-btn flex flex-col items-center text-gray-500 relative w-full"><div class="relative"><svg class="icon text-lg mb-1" viewBox="0 0 24 24"><path d="M21.822 7.431A1 1 0 0 0 21 7H7.333L6.179 4.23A1.994 1.994 0 0 0 4.333 3H2v2h2.333l4.744 11.385A1 1 0 0 0 10 17h8c.417 0 .79-.259.937-.648l3-8a1 1 0 0 0-.115-.921z"></path><circle cx="10.5" cy="19.5" r="1.5"></circle><circle cx="17.5" cy="19.5" r="1.5"></circle></svg><span id="nav-cart-badge" class="absolute -top-1 -right-2 bg-orange-600 text-white text-[10px] font-bold px-1 rounded-full hidden font-sans">0</span></div><span class="text-xs font-bold">Carrinho</span></button>
     </nav>
@@ -302,6 +333,36 @@
                 <button id="btn-add-to-cart" onclick="window.confirmAddToCart()" class="bg-orange-600 text-white font-bold py-3 px-6 rounded-lg ml-4 flex-1">ADICIONAR</button>
             </div>
         </div>
+    </div>
+
+    <!-- MODAL QR MESAS -->
+    <div id="modal-qr" class="fixed inset-0 bg-black/95 z-[99] hidden items-center justify-center p-4 backdrop-blur-sm">
+      <div class="bg-gray-900 rounded-xl max-w-md w-full p-6 border border-gray-700 shadow-2xl relative">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-white font-bold text-lg">QR Code por Mesa</h3>
+          <button onclick="window.closeQrModal()" class="text-gray-500 hover:text-white text-2xl transition">&times;</button>
+        </div>
+
+        <label class="text-xs text-gray-400 font-bold uppercase tracking-wide">Número / Nome da Mesa</label>
+        <input id="qr-mesa" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white mt-1 focus:border-orange-500" placeholder="Ex: 12 ou Varanda" />
+
+        <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wide mt-3 block">Link do seu site (Domínio Público)</label>
+        <input id="qr-base-url" class="w-full bg-black border border-gray-700 rounded-lg p-2 text-white mt-1 focus:border-orange-500 text-xs" placeholder="Ex: https://meuburger.netlify.app (Deixe vazio para usar o atual)" />
+
+        <button onclick="window.generateMesaQR()" class="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg transition shadow-lg">
+          Gerar QR Code
+        </button>
+
+        <div class="mt-6 flex justify-center">
+          <div id="qr-box" class="bg-white p-3 rounded-xl shadow-inner min-h-[220px] min-w-[220px] flex items-center justify-center border-4 border-gray-800">
+            <span class="text-gray-400 text-sm font-sans italic text-center">O QR Code <br>aparecerá aqui</span>
+          </div>
+        </div>
+
+        <p class="text-[10px] text-gray-500 mt-4 text-center">
+          Dica: Salve a imagem gerada (pressionando em cima) para imprimir e colar na mesa.
+        </p>
+      </div>
     </div>
 
     <div id="modal-history" class="fixed inset-0 bg-black/95 z-[90] hidden flex items-center justify-center p-4 backdrop-blur-md">
@@ -366,6 +427,70 @@
         </div>
     </div>
 
+    <!-- MODAL PROMO COMBO (manual) -->
+    <div id="modal-promo" class="fixed inset-0 bg-black/90 z-[99] hidden items-center justify-center p-4 backdrop-blur-sm">
+      <div class="bg-gray-900 rounded-2xl max-w-md w-full p-6 relative border border-gray-700 shadow-2xl">
+        <button onclick="window.closePromoModal()" class="absolute top-3 right-4 text-gray-500 text-2xl hover:text-white transition">&times;</button>
+
+        <div class="flex items-start gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-orange-600/20 border border-orange-500/30 flex items-center justify-center text-orange-400">
+            🔥
+          </div>
+          <div class="flex-1">
+            <h3 id="promo-modal-title" class="text-xl font-bold text-white leading-tight">Promo</h3>
+            <p id="promo-modal-sub" class="text-xs text-gray-400 mt-1">Texto</p>
+          </div>
+        </div>
+
+        <div class="bg-black/40 border border-gray-800 rounded-xl p-4 mb-4">
+          <div class="flex justify-between text-sm text-gray-300 mb-2">
+            <span>Burgers no carrinho</span>
+            <span id="promo-modal-burgers" class="font-mono font-bold text-white">0</span>
+          </div>
+          <div class="flex justify-between text-sm text-gray-300 mb-2">
+            <span>Já tem combos</span>
+            <span id="promo-modal-existing" class="font-mono font-bold text-white">0</span>
+          </div>
+          <div class="flex justify-between text-sm text-gray-300">
+            <span>Preço por combo</span>
+            <span id="promo-modal-price" class="font-mono font-bold text-orange-400">R$ 0,00</span>
+          </div>
+        </div>
+
+        <label class="block text-[11px] text-gray-400 uppercase font-bold mb-2">Quantos combos você quer adicionar?</label>
+
+        <div class="flex items-center gap-3 mb-4">
+          <button id="promo-dec" class="w-11 h-11 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-bold border border-gray-700 active:scale-95 transition">-</button>
+
+          <div class="flex-1">
+            <input id="promo-qty"
+                   type="number"
+                   min="0"
+                   step="1"
+                   class="w-full bg-black border border-gray-700 rounded-xl p-3 text-white text-center font-mono text-lg focus:border-orange-500"
+                   value="0" />
+            <p id="promo-modal-maxhint" class="text-[10px] text-gray-500 mt-2 text-center">Máx: 0</p>
+          </div>
+
+          <button id="promo-inc" class="w-11 h-11 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-bold border border-gray-700 active:scale-95 transition">+</button>
+        </div>
+
+        <div class="bg-gray-800/40 border border-gray-700 rounded-xl p-3 text-sm text-gray-200 mb-5 flex justify-between">
+          <span>Total extra</span>
+          <span id="promo-modal-extra" class="font-bold text-green-400 font-mono">R$ 0,00</span>
+        </div>
+
+        <div class="flex gap-3">
+          <button onclick="window.cancelPromoModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 font-bold py-3 rounded-xl transition">
+            Pular
+          </button>
+          <button onclick="window.confirmPromoModal()" class="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-xl transition">
+            Adicionar
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl z-[70] hidden flex items-center transition-all duration-300 opacity-0 translate-y-[-20px] font-sans font-bold border border-orange-500">
         <span id="toast-msg">Item adicionado!</span>
     </div>
@@ -378,12 +503,152 @@
         
         window.serverUrl = localStorage.getItem('del8ServerUrl') || "";
         window.whatsappNumber = localStorage.getItem('del8WhatsappNumber') || "5585999999999";
+        
+        // --- 🧩 1️⃣ MODO DE OPERAÇÃO ---
+        window.appMode = localStorage.getItem("DEL8_MODE") || "client";
+        window.setMode = function(mode) {
+            window.appMode = mode;
+            localStorage.setItem("DEL8_MODE", mode);
+            location.reload();
+        };
+
         window.cart = [];
         window.localOrders = JSON.parse(localStorage.getItem('del8LocalOrders')) || [];
         window.archivedOrders = JSON.parse(localStorage.getItem('del8ArchivedOrders')) || [];
         window.currentModalItem = null;
         window.modalQtyVal = 1;
         window.dailyOverrides = JSON.parse(localStorage.getItem("del8DailyOverrides")) || {};
+
+        // --- 📲 2️⃣ QR CODE E MESAS ---
+        window.getMesaFromURL = function(){
+            const params = new URLSearchParams(location.search);
+            const mesa = params.get("mesa");
+            if(mesa) localStorage.setItem("del8MesaAtual", mesa);
+            return mesa || localStorage.getItem("del8MesaAtual") || "";
+        };
+        window.mesaAtual = window.getMesaFromURL();
+
+        // ===============================
+        // CANAL REALTIME (Sincronização entre abas)
+        // ===============================
+        window.del8Channel = ("BroadcastChannel" in window) ? new BroadcastChannel("DEL8_SYNC") : null;
+
+        window.broadcast = function(type, payload = {}) {
+            try {
+                if (window.del8Channel) window.del8Channel.postMessage({ type, payload, at: Date.now() });
+                // fallback: dispara "storage event" mudando uma chave
+                localStorage.setItem("__DEL8_PING__", JSON.stringify({ type, payload, at: Date.now() }));
+            } catch (e) {}
+        };
+
+        // --- 🍳 3️⃣ KDS SOUND & LOGIC ---
+        window.kdsSoundOn = localStorage.getItem("del8KdsSound") !== "off";
+
+        window.kdsToggleSound = function(){
+            window.kdsSoundOn = !window.kdsSoundOn;
+            localStorage.setItem("del8KdsSound", window.kdsSoundOn ? "on" : "off");
+            const lbl = document.getElementById("kds-sound-label");
+            if(lbl) {
+                lbl.innerText = window.kdsSoundOn ? "ON" : "OFF";
+                lbl.className = window.kdsSoundOn ? "text-orange-500" : "text-gray-500";
+            }
+        };
+
+        window.kdsBeep = function(){
+            if(!window.kdsSoundOn) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.frequency.value = 880; // beep
+                g.gain.value = 0.06;
+                o.start();
+                setTimeout(()=>{ o.stop(); ctx.close(); }, 180);
+            } catch(e){}
+        };
+
+        window.renderKDS = function(){
+            const pend = document.getElementById("kds-pending");
+            const ready = document.getElementById("kds-ready");
+            if(!pend || !ready) return;
+
+            pend.innerHTML = "";
+            ready.innerHTML = "";
+
+            const all = [...window.localOrders];
+            const sorted = all.slice().sort((a,b)=> (a.timestamp||0) - (b.timestamp||0));
+
+            sorted.forEach(o=>{
+                const mesaBadge = o.mesa ? `<span class="bg-orange-600 text-white text-[10px] px-2 py-0.5 rounded-full uppercase ml-2 align-middle">Mesa ${o.mesa}</span>` : "";
+                
+                const box = `
+                <div class="bg-gray-900 border ${o.status === 'Pronto' ? 'border-green-900/50' : 'border-gray-700'} rounded-xl p-3 shadow-lg transition-all">
+                    <div class="flex justify-between items-start">
+                    <div>
+                        <div class="text-white font-bold text-lg leading-tight">#${o.id} ${mesaBadge}</div>
+                        <div class="text-gray-400 text-xs mt-1 font-sans"><i class="ph-clock"></i> ${o.time || ""} • ${o.customer || "Sem Nome"}</div>
+                    </div>
+                    <button onclick="window.toggleOrderStatus('${o.id}')" class="${o.status === 'Pronto' ? 'bg-gray-800 text-gray-400 hover:text-white' : 'bg-green-600 hover:bg-green-500 text-white shadow-lg'} text-xs font-bold px-3 py-2 rounded-lg transition">
+                        ${o.status === 'Pronto' ? 'Desfazer' : 'Marcar Pronto'}
+                    </button>
+                    </div>
+                    <div class="text-gray-200 text-sm mt-3 whitespace-pre-wrap border-t border-gray-800 pt-3 font-mono leading-relaxed">${o.items || ""}</div>
+                </div>
+                `;
+                if(o.status === "Pronto") ready.innerHTML = box + ready.innerHTML; // Prepend prontos
+                else pend.innerHTML += box; // Append pendentes
+            });
+
+            if(!pend.innerHTML) pend.innerHTML = `<div class="text-gray-600 text-sm italic py-4 text-center bg-gray-900/50 rounded-lg">Sem pedidos pendentes.</div>`;
+            if(!ready.innerHTML) ready.innerHTML = `<div class="text-gray-600 text-sm italic py-4 text-center bg-gray-900/50 rounded-lg">Nenhum pedido pronto hoje.</div>`;
+        };
+
+        // Listener universal (admin e/ou outras abas)
+        window.onSyncMessage = function(msg) {
+            const { type } = msg || {};
+            if (type === "ORDER_NEW" || type === "ORDER_UPDATE" || type === "MENU_UPDATE") {
+                // Se admin estiver logado, atualiza stats e listas na hora
+                if (localStorage.getItem("isAdminLoggedIn") === "true") {
+                    if (typeof window.updateAdminStats === "function") window.updateAdminStats();
+                    
+                    // Se estivermos na tela do KDS, recarrega o KDS
+                    if (!document.getElementById("view-kds").classList.contains("hidden")) {
+                        window.renderKDS();
+                    }
+                    
+                    if (type === "ORDER_NEW") {
+                        // Toca som no painel ao receber ORDER_NEW
+                        if (window.appMode === "admin" && document.getElementById("view-kds").classList.contains("hidden")) {
+                            window.playNotificationSound(); // Alarme Caixa
+                        } else if (!document.getElementById("view-kds").classList.contains("hidden")) {
+                            window.kdsBeep(); // Beep Cozinha
+                        }
+                    }
+                }
+                // Recarrega a memória para ter a certeza que o cardápio está atualizado na view do menu
+                if (type === "MENU_UPDATE") {
+                    window.menuData = JSON.parse(localStorage.getItem("del8MenuData")) || window.menuData;
+                }
+                if (typeof window.renderMenu === "function") window.renderMenu(document.querySelector('.cat-btn.bg-orange-600')?.dataset?.cat || 'all');
+            }
+        };
+
+        if (window.del8Channel) {
+            window.del8Channel.onmessage = (e) => window.onSyncMessage(e.data);
+        }
+
+        window.addEventListener("storage", (e) => {
+            if (e.key === "__DEL8_PING__" && e.newValue) {
+                try { window.onSyncMessage(JSON.parse(e.newValue)); } catch {}
+            }
+            // Se as configurações ou encomendas mudarem noutra aba
+            if (e.key === "del8LocalOrders" || e.key === "del8MenuData") {
+                 window.localOrders = JSON.parse(localStorage.getItem('del8LocalOrders')) || [];
+                 window.menuData = JSON.parse(localStorage.getItem('del8MenuData')) || window.menuData;
+                 window.onSyncMessage({ type: e.key === "del8MenuData" ? "MENU_UPDATE" : "ORDER_UPDATE" });
+            }
+        });
 
         // ===== PROMO CONFIG (COM AGENDA) =====
         const PROMO_STORAGE_KEY = "del8PromoConfig";
@@ -394,7 +659,7 @@
           endAt: "",   
           price: 10.00,
           promoName: "Promo Combo DEL8",
-          multiMode: "perBurger",
+          multiMode: "manual",
           bundleCartItem: {
             id: "PROMO_COMBO_DEL8",
             nome: "🔥 Combo Promo (Batata + Refri)",
@@ -413,6 +678,12 @@
         } catch (e) {
             window.promoConfig = defaultPromoConfig;
         }
+
+        // Itens do bundle (fixos)
+        window.promoBundleItems = [
+          { id: "PROMO-BATATA", nome: "Batata Frita (Promo)", desc: "Inclusa na promo", preco: 0.00 },
+          { id: "PROMO-REFRI", nome: "Refrigerante (Promo)", desc: "Incluso na promo", preco: 0.00 }
+        ];
 
         // Load dynamically from menu_data.js if available, otherwise use fallback
         let DEFAULT_MENU = {};
@@ -685,7 +956,43 @@
             window.renderMenu(c); 
             window.scrollTo(0,0);
         }
-        window.switchTab = function(t) { ['menu','cart','admin'].forEach(v=>document.getElementById(`view-${v}`).classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); const nm = document.getElementById('nav-menu'); const nc = document.getElementById('nav-cart'); if(nm) nm.classList.toggle('text-orange-500', t==='menu'); if(nc) nc.classList.toggle('text-orange-500', t==='cart'); window.scrollTo(0,0); if(t==='admin' && localStorage.getItem('isAdminLoggedIn')==='true'){document.getElementById('admin-login').classList.add('hidden');document.getElementById('admin-content-wrapper').classList.remove('hidden');window.updateAdminStats();} }
+        
+        window.switchTab = function(t) { 
+            // Hide all main views
+            ['menu','cart','admin','kds'].forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if(el) el.classList.add('hidden');
+            }); 
+            
+            // Show requested view
+            const targetView = document.getElementById(`view-${t}`);
+            if(targetView) targetView.classList.remove('hidden'); 
+            
+            // Toggle nav active states
+            const nm = document.getElementById('nav-menu'); 
+            const nc = document.getElementById('nav-cart'); 
+            const navBottom = document.getElementById('bottom-nav');
+            
+            if(nm) nm.classList.toggle('text-orange-500', t==='menu'); 
+            if(nc) nc.classList.toggle('text-orange-500', t==='cart'); 
+            
+            // Logic for specific views
+            if(t==='admin' && localStorage.getItem('isAdminLoggedIn')==='true'){
+                document.getElementById('admin-login').classList.add('hidden');
+                document.getElementById('admin-content-wrapper').classList.remove('hidden');
+                if(navBottom) navBottom.classList.add('hidden');
+                window.updateAdminStats();
+            } else if (t === 'kds') {
+                if(navBottom) navBottom.classList.add('hidden');
+                const lbl = document.getElementById("kds-sound-label");
+                if(lbl) lbl.innerText = window.kdsSoundOn ? "ON" : "OFF";
+                window.renderKDS();
+            } else if (t === 'menu' || t === 'cart') {
+                if(navBottom) navBottom.classList.remove('hidden');
+            }
+            
+            window.scrollTo(0,0); 
+        }
 
         // DB & Admin
         window.saveServerConfig = function() {
@@ -781,22 +1088,17 @@
 
         window.countBurgersInCart = function() {
           const burgers = window.menuData?.["BURGER REGRETS"] || [];
-
-          const burgerNames = burgers.map(i => {
-            const d = document.createElement("div");
-            d.innerHTML = i.nome || "";
-            return d.innerText.toLowerCase();
-          });
+          const burgerIds = new Set(burgers.map(b => b.id));
 
           let totalBurgerQty = 0;
-
           window.cart.forEach(i => {
-            const d = document.createElement("div");
-            d.innerHTML = i.nome || "";
-            const name = d.innerText.toLowerCase();
-
-            const isBurger = burgerNames.some(b => name.includes(b) || b.includes(name));
-            if (isBurger) totalBurgerQty += Number(i.qty || 0);
+            const nome = (i.nome || "").toLowerCase();
+            // Conta se for ID da categoria ou se o nome contiver palavras-chave (fallback super seguro)
+            const isBurger = burgerIds.has(i.id) || nome.includes("burger") || nome.includes("simple") || nome.includes("pikle") || nome.includes("melt") || nome.includes("solemar") || nome.includes("monster") || nome.includes("bacon") || nome.includes("rings");
+            
+            if (isBurger) {
+                totalBurgerQty += Number(i.qty || 0);
+            }
           });
 
           return totalBurgerQty;
@@ -809,9 +1111,11 @@
         };
 
         window.addPromoBundlesToCart = function(qtyToAdd) {
-          const cfg = window.promoConfig;
-          const promoId = cfg?.bundleCartItem?.id || "PROMO_COMBO_DEL8";
-          const price = Number(cfg.price ?? cfg.bundleCartItem?.preco ?? 10);
+          const cfg = window.promoConfig || {};
+          const bundleFallback = { id: "PROMO_COMBO_DEL8", nome: "🔥 Combo Promo", desc: "Batata + Refri", preco: 10.00 };
+          const bundle = cfg.bundleCartItem || bundleFallback;
+          const promoId = bundle.id;
+          const price = Number(cfg.price ?? bundle.preco);
 
           qtyToAdd = Math.max(0, parseInt(qtyToAdd || "0", 10));
           if (!qtyToAdd) return;
@@ -825,7 +1129,7 @@
             window.ensurePromoBundleName(existing);
           } else {
             const item = window.ensurePromoBundleName({
-              ...cfg.bundleCartItem,
+              ...bundle,
               id: promoId,
               preco: price,
               qty: qtyToAdd,
@@ -837,6 +1141,141 @@
           }
 
           window.updateCartUI();
+        };
+
+        // ===============================
+        // PROMO MODAL (manual) - Promise flow
+        // ===============================
+        window.__promoModalResolver = null;
+
+        window.openPromoModal = function({ burgerQty, existingPromoQty, price, promoName }) {
+          return new Promise((resolve) => {
+            const modal = document.getElementById("modal-promo");
+            if (!modal) return resolve(0);
+
+            // guarda resolver
+            window.__promoModalResolver = resolve;
+
+            const max = Math.max(0, burgerQty); // regra: no máximo 1 combo por burger
+            const title = document.getElementById("promo-modal-title");
+            const sub = document.getElementById("promo-modal-sub");
+            const elB = document.getElementById("promo-modal-burgers");
+            const elE = document.getElementById("promo-modal-existing");
+            const elP = document.getElementById("promo-modal-price");
+            const elHint = document.getElementById("promo-modal-maxhint");
+            const qtyInput = document.getElementById("promo-qty");
+            const elExtra = document.getElementById("promo-modal-extra");
+
+            if (title) title.innerText = promoName || "Promo Combo DEL8";
+            if (sub) sub.innerText = `Adicione Batata + Refri por +R$ ${Number(price).toFixed(2)} cada.`;
+            if (elB) elB.innerText = String(burgerQty);
+            if (elE) elE.innerText = String(existingPromoQty);
+            if (elP) elP.innerText = `R$ ${Number(price).toFixed(2)}`;
+            if (elHint) elHint.innerText = `Máx: ${max}`;
+
+            // valor inicial: 0 (manual)
+            if (qtyInput) {
+              qtyInput.value = "0";
+              qtyInput.min = "0";
+              qtyInput.max = String(max);
+            }
+
+            const clamp = () => {
+              let v = parseInt(qtyInput.value || "0", 10);
+              if (!Number.isFinite(v)) v = 0;
+              v = Math.max(0, Math.min(max, v));
+              qtyInput.value = String(v);
+              if (elExtra) elExtra.innerText = `R$ ${(v * Number(price)).toFixed(2)}`;
+              return v;
+            };
+
+            // botões +/- e input
+            const dec = document.getElementById("promo-dec");
+            const inc = document.getElementById("promo-inc");
+
+            if (dec) dec.onclick = () => { qtyInput.value = String(parseInt(qtyInput.value || "0", 10) - 1); clamp(); };
+            if (inc) inc.onclick = () => { qtyInput.value = String(parseInt(qtyInput.value || "0", 10) + 1); clamp(); };
+            if (qtyInput) qtyInput.oninput = clamp;
+
+            // abre modal
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+
+            // trava scroll de fundo (opcional)
+            document.body.style.overflow = "hidden";
+
+            // calcula extra inicial
+            clamp();
+
+            // expõe confirm/cancel
+            window.confirmPromoModal = function() {
+              const v = clamp();
+              window.closePromoModal();
+              resolve(v);
+            };
+
+            window.cancelPromoModal = function() {
+              window.closePromoModal();
+              resolve(0);
+            };
+
+            window.closePromoModal = function() {
+              modal.classList.add("hidden");
+              modal.classList.remove("flex");
+              document.body.style.overflow = "";
+              window.__promoModalResolver = null;
+            };
+          });
+        };
+
+        // ===============================
+        // QR MODAL (MESA)
+        // ===============================
+        window.openQrModal = function(){
+            const m = document.getElementById("modal-qr");
+            document.getElementById("qr-box").innerHTML = '<span class="text-gray-400 text-sm font-sans italic text-center">O QR Code <br>aparecerá aqui</span>';
+            m.classList.remove("hidden"); m.classList.add("flex");
+        };
+
+        window.closeQrModal = function(){
+            const m = document.getElementById("modal-qr");
+            m.classList.add("hidden"); m.classList.remove("flex");
+        };
+
+        window.generateMesaQR = function(){
+            const mesa = (document.getElementById("qr-mesa")?.value || "").trim();
+            if(!mesa) return alert("Digite o número ou nome da mesa para gerar o código.");
+            
+            let baseUrlStr = (document.getElementById("qr-base-url")?.value || "").trim();
+            let u;
+
+            try {
+                if (baseUrlStr) {
+                    // Garante que tem http/https
+                    if (!baseUrlStr.startsWith('http')) baseUrlStr = 'https://' + baseUrlStr;
+                    u = new URL(baseUrlStr);
+                } else {
+                    // Pega a URL atual se o campo estiver vazio
+                    u = new URL(window.location.href);
+                }
+            } catch(e) {
+                return alert("O link base fornecido é inválido. Verifique o formato.");
+            }
+
+            // Remove qualquer lixo de hash e garante query certa
+            u.hash = "";
+            u.searchParams.set("mesa", mesa);
+
+            const box = document.getElementById("qr-box");
+            box.innerHTML = "";
+            new QRCode(box, { 
+                text: u.toString(), 
+                width: 200, 
+                height: 200,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
         };
 
         window.updateConnectionStatus = function() {
@@ -865,11 +1304,24 @@
                         const data = await res.json();
                         if(data && typeof data === 'object' && Object.keys(data).length > 0) { 
                             window.menuData = data; 
+                            localStorage.setItem('del8MenuData', JSON.stringify(data)); // Cache local garantido
                             window.renderMenu('all'); 
                         }
                     }
-                } catch(e) {}
+                } catch(e) {
+                    console.warn("Erro ao carregar menu do servidor, usando cache local", e);
+                }
             }
+            
+            // Verifica Mesa da URL para exibir Header
+            if (window.mesaAtual) {
+                const mesaBadge = document.getElementById("header-mesa-badge");
+                if(mesaBadge) {
+                    mesaBadge.innerText = `Mesa ${window.mesaAtual}`;
+                    mesaBadge.classList.remove("hidden");
+                }
+            }
+
             // Remove overlay immediately so the user is never stuck
             const loader = document.getElementById('loading-overlay');
             if(loader) { loader.classList.add('opacity-0'); setTimeout(() => loader.classList.add('hidden'), 500); }
@@ -890,7 +1342,6 @@
                     if(!res.ok) throw new Error("Falha");
                     return true;
                 } catch(e) {
-                    // alert("Erro online. Salvo localmente."); // Optional: remove alert for seamless whatsapp exp
                     window.localOrders.push(order); localStorage.setItem('del8LocalOrders', JSON.stringify(window.localOrders));
                     return false;
                 }
@@ -935,61 +1386,34 @@
             if(window.cart.length===0) return alert("Carrinho vazio.");
 
             // =========================================================
-            // 1) OFERTA DA PROMO (ANTES DE SALVAR / WHATS)
+            // PROMO (manual + modal) - antes de salvar e antes do WhatsApp
             // =========================================================
-            if (window.isPromoActiveNow()) {
+            if (window.isPromoActiveNow() && window.promoConfig?.multiMode === "manual") {
               const burgerQty = window.countBurgersInCart();
-              const promoQty = window.countPromoBundlesInCart();
-
-              // trava: se não tiver burger, não oferta
               if (burgerQty > 0) {
-                const maxByBurger = Math.max(0, burgerQty - promoQty);
+                const existingPromoQty = window.countPromoBundlesInCart();
+                const price = Number(window.promoConfig?.price ?? window.promoConfig?.bundleCartItem?.preco ?? 10);
+                const promoName = (window.promoConfig?.promoName || "").trim() || "Promo Combo DEL8";
 
-                // modo 1: 1 combo por burger (automático com confirmação)
-                if (window.promoConfig.multiMode === "perBurger" || !window.promoConfig.multiMode) {
-                  if (maxByBurger > 0) {
-                    const price = Number(window.promoConfig?.price ?? 10);
-                    const promoName = window.promoConfig?.promoName?.trim() || "Promo Combo DEL8";
+                // modal retorna quantos combos o cliente quer (0..burgerQty)
+                const desired = await window.openPromoModal({
+                  burgerQty,
+                  existingPromoQty,
+                  price,
+                  promoName
+                });
 
-                    const accept = confirm(
-                      `🔥 ${promoName}!\n\n` +
-                      `Você tem ${burgerQty} burger(s) no carrinho.\n` +
-                      `Pode adicionar até ${maxByBurger} combo(s).\n\n` +
-                      `Cada combo: + R$ ${price.toFixed(2)} (Batata + Refri)\n\n` +
-                      `Quer adicionar agora?`
-                    );
+                // regra: não duplicar além do desejado
+                const desiredClamped = Math.max(0, Math.min(burgerQty, parseInt(desired || "0", 10)));
+                const addQty = Math.max(0, desiredClamped - existingPromoQty);
 
-                    if (accept) {
-                      // adiciona o máximo permitido automaticamente
-                      window.addPromoBundlesToCart(maxByBurger);
-                    }
-                  }
-                }
-
-                // modo 2: manual (pergunta quantos combos)
-                if (window.promoConfig.multiMode === "manual") {
-                  const price = Number(window.promoConfig?.price ?? 10);
-                  const promoName = window.promoConfig?.promoName?.trim() || "Promo Combo DEL8";
-
-                  const desired = prompt(
-                    `${promoName}\n\n` +
-                    `Você tem ${burgerQty} burger(s).\n` +
-                    `Quantos combos deseja adicionar? (0 a ${burgerQty})\n\n` +
-                    `Cada combo: + R$ ${price.toFixed(2)}`
-                  );
-
-                  if (desired !== null) {
-                    let qty = parseInt(desired, 10);
-                    if (!Number.isFinite(qty)) qty = 0;
-                    qty = Math.max(0, Math.min(burgerQty, qty));
-
-                    const addQty = Math.max(0, qty - promoQty); // evita duplicar
-                    if (addQty > 0) window.addPromoBundlesToCart(addQty);
-                  }
+                if (addQty > 0) {
+                  window.addPromoBundlesToCart(addQty);
                 }
               }
             }
 
+            // --- DEPOIS DA PROMO: RECALCULAR TOTAL, ITENS, VALIDAR ENDEREÇO ---
             const deliveryMethod = document.getElementById('order-delivery').value;
             const paymentMethod = document.getElementById('order-payment').value;
             const address = document.getElementById('order-address').value.trim();
@@ -1018,17 +1442,47 @@
             }).join('\n');
             
             const orderId = Date.now().toString().slice(-6);
-            const order = { id: orderId, date: new Date().toLocaleDateString('pt-BR'), time: new Date().toLocaleTimeString('pt-BR'), timestamp: Date.now(), customer: name, items: itemsPlain, total, status: 'Pendente' };
             
-            // Salva no sistema local (Painel Admin)
+            // Garantir IDs únicos p/ rastreamento no Backoffice
+            const safeDeviceId = (window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : 'dev-' + Date.now());
+            
+            const order = { 
+                id: orderId,
+                mesa: window.mesaAtual || null, // <- Adiciona a Mesa ao Pedido 
+                date: new Date().toLocaleDateString('pt-BR'), 
+                time: new Date().toLocaleTimeString('pt-BR'), 
+                timestamp: Date.now(), 
+                customer: name, 
+                items: itemsPlain, 
+                total, 
+                status: 'Pendente',
+                
+                // NOVOS CAMPOS PARA O BACKOFFICE
+                source: "front",
+                deliveryMethod: deliveryMethod,
+                paymentMethod: paymentMethod,
+                address: deliveryMethod === "Entrega" ? address : "",
+                deviceId: localStorage.getItem("del8DeviceId") || (localStorage.setItem("del8DeviceId", safeDeviceId), localStorage.getItem("del8DeviceId")),
+                storeId: localStorage.getItem("del8StoreId") || "DEL8"
+            };
+            
+            // Salva no sistema local / Servidor via POST /api/orders
             await window.sendOrder(order);
+            
+            // DISPARA SINC PRA OUTRAS ABAS DO ADMIN/KDS
+            window.broadcast("ORDER_NEW", { id: order.id, total: order.total, status: order.status });
             
             // --- INTEGRAÇÃO WHATSAPP ---
             const phone = window.whatsappNumber; // Usa o número configurado
             let msg = 
-                `🍔 *NOVO PEDIDO - DEL8* (#${orderId})\n\n` +
-                `👤 *Cliente:* ${name}\n` +
-                `🛵 *Retirada/Entrega:* ${deliveryMethod}\n`;
+                `🍔 *NOVO PEDIDO - DEL8* (#${orderId})\n\n`;
+
+            if (window.mesaAtual) {
+                msg += `🪑 *MESA:* ${window.mesaAtual}\n`; // <- Exibe a Mesa no WhatsApp
+            }
+
+            msg += `👤 *Cliente:* ${name}\n` +
+                   `🛵 *Retirada/Entrega:* ${deliveryMethod}\n`;
             
             if (deliveryMethod === "Entrega") {
                 msg += `📍 *Endereço:* ${address}\n`;
@@ -1057,12 +1511,33 @@
             window.switchTab('menu');
         }
 
-        window.toggleOrderStatus = function(id) {
+        window.toggleOrderStatus = async function(id) {
              let order = window.localOrders.find(o => o.id == id);
              if (order) {
                  order.status = order.status === 'Pronto' ? 'Pendente' : 'Pronto';
                  localStorage.setItem('del8LocalOrders', JSON.stringify(window.localOrders));
+                 
+                 // --- NOVA LÓGICA: ATUALIZA O SERVIDOR ---
+                 if (window.serverUrl) {
+                     try {
+                         await fetch(`${window.serverUrl}/api/orders/${id}/status`, {
+                             method: 'POST',
+                             headers: {'Content-Type': 'application/json'},
+                             body: JSON.stringify({ status: order.status })
+                         });
+                     } catch(e) { console.warn("Erro ao atualizar status no servidor remoto."); }
+                 }
+
+                 // Se no modo admin
                  window.updateAdminStats();
+
+                 // Se no modo KDS
+                 if (!document.getElementById("view-kds").classList.contains("hidden")) {
+                    window.renderKDS();
+                 }
+                 
+                 // Sincroniza em tempo real noutras abas abertas no mesmo aparelho
+                 window.broadcast("ORDER_UPDATE", { id, status: order.status });
              }
         }
         window.updateAdminStats = async function() {
@@ -1110,7 +1585,9 @@
                 const statusColor = isReady ? 'border-green-900/50 bg-green-900/10' : 'border-orange-500/30 bg-gray-900';
                 const btnIcon = isReady ? '✔' : '⬜';
                 const btnClass = isReady ? 'hover:text-orange-500' : 'bg-green-600 hover:bg-green-500 rounded-full p-1 shadow-lg text-xs';
-                const html = `<div class="p-3 rounded border ${statusColor} text-sm mb-2 draggable" draggable="true" ondragstart="window.drag(event, '${o.id}')" id="order-${o.id}"><div class="flex justify-between mb-1"><span class="font-bold text-white">#${o.id} - ${o.customer}</span><div class="flex items-center gap-2"><span class="text-orange-500 font-bold">R$ ${parseFloat(o.total).toFixed(2)}</span><button onclick="window.toggleOrderStatus('${o.id}')" class="${btnClass}">${btnIcon}</button></div></div><p class="text-gray-400 text-xs">${o.time}</p><p class="text-gray-300 text-xs border-t border-gray-800 pt-2 mt-1">${o.items}</p></div>`;
+                const mesaBadge = o.mesa ? `<span class="bg-orange-600/20 border border-orange-500 text-orange-400 text-[8px] px-1 py-0.5 rounded uppercase ml-1 align-middle">Mesa ${o.mesa}</span>` : "";
+
+                const html = `<div class="p-3 rounded border ${statusColor} text-sm mb-2 draggable" draggable="true" ondragstart="window.drag(event, '${o.id}')" id="order-${o.id}"><div class="flex justify-between mb-1"><span class="font-bold text-white">#${o.id} - ${o.customer} ${mesaBadge}</span><div class="flex items-center gap-2"><span class="text-orange-500 font-bold">R$ ${parseFloat(o.total).toFixed(2)}</span><button onclick="window.toggleOrderStatus('${o.id}')" class="${btnClass}">${btnIcon}</button></div></div><p class="text-gray-400 text-xs">${o.time}</p><p class="text-gray-300 text-xs border-t border-gray-800 pt-2 mt-1">${o.items}</p></div>`;
                 if(isReady) completedList.innerHTML += html; else pendingList.innerHTML += html;
             });
         }
@@ -1137,6 +1614,41 @@
             else if (v==='menu') window.renderAdminMenu();
             else if (v==='analysis') window.renderAnalysis();
         }
+
+        window.renderAdminMenu = function() {
+            const list = document.getElementById('admin-menu-list');
+            if (!list) return;
+            list.innerHTML = '';
+            
+            if (!window.menuData || Object.keys(window.menuData).length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-500">Cardápio vazio.</p>';
+                return;
+            }
+
+            for (const cat in window.menuData) {
+                const items = window.menuData[cat];
+                if (!items || items.length === 0) continue;
+
+                list.innerHTML += `<h4 class="text-orange-500 font-bold text-xs uppercase mt-4 mb-2 border-b border-orange-500/30 pb-1">${cat}</h4>`;
+                
+                items.forEach((item, index) => {
+                    list.innerHTML += `
+                        <div class="bg-gray-900 border border-gray-800 rounded-lg p-3 flex justify-between items-center mb-2">
+                            <div class="flex-1 pr-2">
+                                <h5 class="text-white font-bold text-sm">${item.nome}</h5>
+                                <p class="text-gray-400 text-[10px] line-clamp-1">${item.desc}</p>
+                                <span class="text-orange-500 font-bold text-xs mt-1 block">R$ ${parseFloat(item.preco).toFixed(2)}</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="window.openMenuEditModal('${cat}', ${index})" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded font-bold transition">Editar</button>
+                                <button onclick="window.deleteMenuItem('${cat}', ${index})" class="bg-red-900/60 hover:bg-red-800 text-red-200 text-xs px-3 py-1.5 rounded font-bold transition border border-red-800">Apagar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        };
+
         window.openMenuEditModal = function(c,i){document.getElementById('modal-menu-edit').classList.remove('hidden'); if(c){const it=window.menuData[c][i]; document.getElementById('edit-cat').value=c; document.getElementById('edit-name').value=it.nome; document.getElementById('edit-desc').value=it.desc; document.getElementById('edit-price').value=it.preco; document.getElementById('edit-original-cat').value=c; document.getElementById('edit-index').value=i;}else{document.getElementById('edit-index').value=''; document.getElementById('edit-name').value=''; document.getElementById('edit-desc').value=''; document.getElementById('edit-price').value='';}}
         window.closeMenuEditModal = function(){document.getElementById('modal-menu-edit').classList.add('hidden');}
         window.saveMenuItem = async function() {
@@ -1153,9 +1665,23 @@
             else { (window.menuData[cat]||(window.menuData[cat]=[])).push(item); }
             localStorage.setItem('del8MenuData', JSON.stringify(window.menuData));
             await window.syncMenu(window.menuData);
-            window.renderAdminMenu(); window.renderMenu('all'); window.closeMenuEditModal();
+            
+            // Sincroniza a atualização do menu nas outras janelas
+            window.broadcast("MENU_UPDATE", { updated: true });
+            
+            if (typeof window.renderAdminMenu === "function") window.renderAdminMenu(); 
+            window.renderMenu('all'); 
+            window.closeMenuEditModal();
         }
-        window.deleteMenuItem = function(c,i) { if(confirm("Apagar?")) { window.menuData[c].splice(i,1); localStorage.setItem('del8MenuData', JSON.stringify(window.menuData)); window.renderAdminMenu(); window.renderMenu('all'); } }
+        window.deleteMenuItem = function(c,i) { 
+            if(confirm("Apagar?")) { 
+                window.menuData[c].splice(i,1); 
+                localStorage.setItem('del8MenuData', JSON.stringify(window.menuData)); 
+                window.broadcast("MENU_UPDATE", { updated: true }); // Sincroniza
+                if (typeof window.renderAdminMenu === "function") window.renderAdminMenu(); 
+                window.renderMenu('all'); 
+            } 
+        }
         window.closeRegister = async function() {
             // recarrega do storage para garantir
             window.localOrders = JSON.parse(localStorage.getItem('del8LocalOrders')) || [];
@@ -1264,7 +1790,7 @@
         window.exportToCSV = function() {
             const all = [...window.archivedOrders, ...window.localOrders];
             if(!all || all.length===0) return alert("Sem dados");
-            let csv = "ID,Data,Hora,Cliente,Itens,Total,Status\n" + all.map(o => `${o.id},${o.date},${o.time},${o.customer},"${o.items}",${o.total},${o.status}`).join("\n");
+            let csv = "ID,Mesa,Data,Hora,Cliente,Itens,Total,Status\n" + all.map(o => `${o.id},${o.mesa || ''},${o.date},${o.time},${o.customer},"${o.items}",${o.total},${o.status}`).join("\n");
             const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8,"+csv); link.download = "historico_completo.csv"; link.click();
         }
         window.showToast = function(m){
@@ -1497,6 +2023,25 @@
             const passInput = document.getElementById('admin-pass');
             if(passInput) passInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.checkAdmin(); });
             
+            // --- 🧩 3️⃣ BOTÃO SECRETO (Logo Long Press) PARA TROCAR MODO ---
+            let pressTimer = null;
+            const brand = document.querySelector("header h1");
+            if (brand) {
+                const startPress = (e) => {
+                    pressTimer = setTimeout(() => {
+                        window.setMode(window.appMode === "client" ? "admin" : "client");
+                    }, 1000);
+                };
+                const cancelPress = () => clearTimeout(pressTimer);
+
+                brand.addEventListener("touchstart", startPress, {passive: false});
+                brand.addEventListener("touchend", cancelPress);
+                brand.addEventListener("touchmove", cancelPress); // Cancela se arrastar o dedo
+                brand.addEventListener("mousedown", startPress);
+                brand.addEventListener("mouseup", cancelPress);
+                brand.addEventListener("mouseleave", cancelPress);
+            }
+
             // Preenche os campos de config no painel
             const waInput = document.getElementById('whatsapp-number-input');
             if(waInput) waInput.value = window.whatsappNumber;
@@ -1519,8 +2064,42 @@
             window.updatePromoStatusUI();
 
             window.initData(); // Fixed: call local function directly inside module
-            window.renderMenu('all');
-            window.updateCartUI(); 
+            
+            // --- 🧩 2️⃣ SEPARAR VISUALMENTE CLIENTE VS PAINEL ---
+            const navBottom = document.querySelector('nav.fixed.bottom-0');
+            const headerCart = document.querySelector('.relative.cursor-pointer');
+            
+            if (window.appMode === "admin") {
+                document.getElementById("view-menu").classList.add("hidden");
+                document.getElementById("view-cart").classList.add("hidden");
+                document.getElementById("view-admin").classList.remove("hidden");
+                document.getElementById("view-kds").classList.add("hidden");
+                
+                // Esconde a navegação se estivermos no painel limpo
+                if (navBottom) navBottom.classList.add("hidden");
+                if (headerCart) headerCart.classList.add("hidden");
+                
+                if (localStorage.getItem('isAdminLoggedIn') === 'true') {
+                    document.getElementById('admin-login').classList.add('hidden');
+                    document.getElementById('admin-content-wrapper').classList.remove('hidden');
+                    window.updateAdminStats();
+                } else {
+                    document.getElementById('admin-login').classList.remove('hidden');
+                    document.getElementById('admin-content-wrapper').classList.add('hidden');
+                }
+            } else {
+                document.getElementById("view-menu").classList.remove("hidden");
+                document.getElementById("view-cart").classList.add("hidden");
+                document.getElementById("view-admin").classList.add("hidden");
+                document.getElementById("view-kds").classList.add("hidden");
+                
+                // Mostra navegação para os clientes
+                if (navBottom) navBottom.classList.remove("hidden");
+                if (headerCart) headerCart.classList.remove("hidden");
+                
+                window.renderMenu('all');
+                window.updateCartUI(); 
+            }
         });
     </script>
 </body>

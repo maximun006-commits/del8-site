@@ -93,16 +93,8 @@
         <div id="view-cart" class="hidden animate-fade-in p-1">
             <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
                 <h2 class="text-2xl font-bold text-white">Seu Carrinho</h2>
-                <div class="flex gap-2">
-                    <button id="btn-analyze-cart" onclick="window.analyzeCart()" class="hidden text-xs bg-gray-900 text-orange-400 border border-orange-500/50 px-3 py-1 rounded-full flex items-center gap-2 hover:bg-gray-800 transition font-bold"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-12h2v6h-2zm0 8h2v2h-2z"></path></svg> <span>Julgar</span></button>
-                    <button id="btn-diet-excuse" onclick="window.generateDietExcuse()" class="hidden text-xs bg-gray-900 text-green-400 border border-green-500/50 px-3 py-1 rounded-full flex items-center gap-2 hover:bg-gray-800 transition font-bold"><svg class="icon" viewBox="0 0 24 24"><path d="M2 22a8 8 0 1 1 16 0h-2a6 6 0 1 0-12 0H2zm8-9c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-4c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg> <span>Desculpa p/ Nutri</span></button>
-                </div>
             </div>
-            <div id="cart-ai-response" class="hidden mb-4 bg-gray-900 border border-orange-500/30 p-3 rounded-lg text-sm text-gray-300 relative mt-2">
-                <svg class="icon absolute top-2 left-2 text-orange-500/20 text-2xl" viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"></path></svg>
-                <div id="cart-ai-text" class="pl-4 italic font-sans"></div>
-                <button onclick="window.closeCartAi()" class="absolute top-1 right-2 text-gray-500 hover:text-white">&times;</button>
-            </div>
+
             <div id="cart-items-container" class="space-y-4 mb-6 mt-4"></div>
             
             <div id="cart-footer" class="hidden bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-800 mb-4">
@@ -124,7 +116,13 @@
                 
                 <input type="text" id="order-address" class="hidden w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-orange-500 font-sans mb-3 text-sm" placeholder="Endereço completo para entrega...">
                 <input type="text" id="customer-name" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-orange-500 font-sans mb-4" placeholder="Digite seu nome...">
-                <button onclick="window.checkout()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-lg flex justify-center items-center gap-2 transform active:scale-95 transition-all">FINALIZAR PEDIDO</button>
+                
+                <button id="btn-add-combo"
+                  onclick="window.addComboFromCart()"
+                  class="w-full mb-3 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-lg border border-orange-500/30 hidden transition-all shadow-lg active:scale-95">
+                  ➕ Adicionar Combo (Batata + Refri)
+                </button>
+                <button onclick="window.checkout()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-lg flex justify-center items-center gap-2 transform active:scale-95 transition-all shadow-lg">FINALIZAR PEDIDO</button>
             </div>
         </div>
 
@@ -148,7 +146,7 @@
                     <!-- Configuração do WhatsApp -->
                     <label class="text-[10px] text-gray-400 uppercase font-bold mt-2">Número WhatsApp p/ Pedidos</label>
                     <div class="flex gap-2">
-                        <input type="text" id="whatsapp-number-input" class="flex-1 bg-black border border-gray-600 rounded p-1 text-xs text-white" placeholder="5585999999999">
+                        <input type="text" id="whatsapp-number-input" class="flex-1 bg-black border border-gray-600 rounded p-1 text-xs text-white" placeholder="5585921978736">
                         <button onclick="window.saveWhatsappConfig()" class="bg-green-600 hover:bg-green-500 text-white text-xs px-3 rounded font-bold transition">SALVAR</button>
                     </div>
 
@@ -503,7 +501,7 @@
         window.db = null; window.auth = null; window.appId = null; window.userId = null;
         
         window.serverUrl = localStorage.getItem('del8ServerUrl') || "";
-        window.whatsappNumber = localStorage.getItem('del8WhatsappNumber') || "5585999999999";
+        window.whatsappNumber = localStorage.getItem('del8WhatsappNumber') || "5585921978736";
         
         // --- 🧩 1️⃣ MODO DE OPERAÇÃO ---
         window.appMode = localStorage.getItem("DEL8_MODE") || "client";
@@ -521,13 +519,13 @@
         window.dailyOverrides = JSON.parse(localStorage.getItem("del8DailyOverrides")) || {};
 
         // --- 📲 2️⃣ QR CODE E MESAS ---
-        window.getMesaFromURL = function(){
+        window.getMesa = function(){
             const params = new URLSearchParams(location.search);
             const mesa = params.get("mesa");
             if(mesa) localStorage.setItem("del8MesaAtual", mesa);
             return mesa || localStorage.getItem("del8MesaAtual") || "";
         };
-        window.mesaAtual = window.getMesaFromURL();
+        window.mesaAtual = window.getMesa();
 
         // ===============================
         // CANAL REALTIME (Sincronização entre abas)
@@ -871,14 +869,18 @@
         window.updateCartUI = function() {
             const c = document.getElementById('cart-items-container'), f = document.getElementById('cart-footer');
             if(!c) return;
-            if(window.cart.length===0) { c.innerHTML='<div class="text-center text-gray-500 py-10">Carrinho vazio</div>'; f.classList.add('hidden'); document.getElementById('btn-analyze-cart').classList.add('hidden'); document.getElementById('btn-diet-excuse').classList.add('hidden'); }
+            if(window.cart.length===0) { 
+                c.innerHTML='<div class="text-center text-gray-500 py-10">Carrinho vazio</div>'; 
+                f.classList.add('hidden'); 
+            }
             else { 
-                document.getElementById('btn-analyze-cart').classList.remove('hidden'); document.getElementById('btn-diet-excuse').classList.remove('hidden');
-                f.classList.remove('hidden'); c.innerHTML=''; let t=0; 
+                f.classList.remove('hidden'); 
+                c.innerHTML=''; let t=0; 
                 window.cart.forEach((i,x)=>{ t+=i.preco*i.qty; c.innerHTML+=`<div class="bg-gray-900 rounded p-2 flex justify-between items-center mb-2"><div class="text-sm text-white"><span class="text-orange-500 font-bold">${i.qty}x</span> ${i.nome}</div><button onclick="window.removeFromCart(${x})" class="text-red-500">✕</button></div>`; }); 
                 document.getElementById('cart-subtotal').innerText=`R$ ${t.toFixed(2)}`; document.getElementById('cart-total').innerText=`R$ ${t.toFixed(2)}`; 
             }
             const q = window.cart.reduce((a,b)=>a+b.qty,0); document.querySelectorAll('#header-cart-count, #nav-cart-badge').forEach(e=>{e.innerText=q; e.classList.toggle('hidden',q===0)});
+            window.refreshComboButtonUI();
         }
         window.openItemModal = function(id) {
             let item = null;
@@ -1016,7 +1018,7 @@
                 window.showToast("Número do WhatsApp salvo!");
                 input.value = num;
             } else {
-                alert("Digite um número válido com DDD (mínimo 10 dígitos). Ex: 5585999999999");
+                alert("Digite um número válido com DDD (mínimo 10 dígitos). Ex: 5585921978736");
             }
         }
 
@@ -1112,14 +1114,18 @@
         };
 
         window.addPromoBundlesToCart = function(qtyToAdd) {
+          // 4) (Recomendado) Blindagem extra dentro do addPromoBundlesToCart
+          const burgerQty = window.countBurgersInCart();
+          const existingPromoQty = window.countPromoBundlesInCart();
+          const remaining = Math.max(0, burgerQty - existingPromoQty);
+          qtyToAdd = Math.max(0, Math.min(remaining, parseInt(qtyToAdd || "0", 10)));
+          if (!qtyToAdd) return;
+
           const cfg = window.promoConfig || {};
           const bundleFallback = { id: "PROMO_COMBO_DEL8", nome: "🔥 Combo Promo", desc: "Batata + Refri", preco: 10.00 };
           const bundle = cfg.bundleCartItem || bundleFallback;
           const promoId = bundle.id;
           const price = Number(cfg.price ?? bundle.preco);
-
-          qtyToAdd = Math.max(0, parseInt(qtyToAdd || "0", 10));
-          if (!qtyToAdd) return;
 
           const existing = window.cart.find(i => i.id === promoId);
 
@@ -1157,7 +1163,8 @@
             // guarda resolver
             window.__promoModalResolver = resolve;
 
-            const max = Math.max(0, burgerQty); // regra: no máximo 1 combo por burger
+            // 1) Trocar o “máximo” do modal para apenas o que falta
+            const max = Math.max(0, burgerQty - existingPromoQty); // só o que falta (nunca deixa passar)
             const title = document.getElementById("promo-modal-title");
             const sub = document.getElementById("promo-modal-sub");
             const elB = document.getElementById("promo-modal-burgers");
@@ -1228,6 +1235,70 @@
             };
           });
         };
+
+        window.shouldShowComboButton = function() {
+          // Só aparece se promo estiver ativa agora
+          if (!window.isPromoActiveNow()) return false;
+
+          const burgerQty = window.countBurgersInCart();
+          if (burgerQty <= 0) return false;
+
+          const existingPromoQty = window.countPromoBundlesInCart();
+
+          // Se já atingiu o máximo (1 combo por burger), não mostra
+          if (existingPromoQty >= burgerQty) return false;
+
+          return true;
+        };
+
+        window.refreshComboButtonUI = function() {
+          const btn = document.getElementById("btn-add-combo");
+          if (!btn) return;
+
+          const show = window.shouldShowComboButton();
+          btn.classList.toggle("hidden", !show);
+
+          if (show) {
+            const burgerQty = window.countBurgersInCart();
+            const existingPromoQty = window.countPromoBundlesInCart();
+            const remaining = Math.max(0, burgerQty - existingPromoQty);
+            const promoName = (window.promoConfig?.promoName || "").trim() || "Combo Promo";
+            btn.innerText = `➕ Adicionar ${promoName} (restam ${remaining})`;
+          }
+        };
+
+        window.addComboFromCart = async function() {
+          if (!window.isPromoActiveNow()) return alert("Promo não está ativa agora.");
+
+          const burgerQty = window.countBurgersInCart();
+          if (burgerQty <= 0) return alert("Adicione pelo menos 1 burger no carrinho para liberar o combo.");
+
+          const existingPromoQty = window.countPromoBundlesInCart();
+          
+          // 3) Ajustar o botão “Adicionar Combo” (mesma regra)
+          const remaining = Math.max(0, burgerQty - existingPromoQty);
+          if (remaining <= 0) return alert("Você já adicionou o máximo de combos para os burgers do carrinho.");
+
+          const price = Number(window.promoConfig?.price ?? window.promoConfig?.bundleCartItem?.preco ?? 10);
+          const promoName = (window.promoConfig?.promoName || "").trim() || "Promo Combo DEL8";
+
+          const desiredToAdd = await window.openPromoModal({
+            burgerQty,
+            existingPromoQty,
+            price,
+            promoName
+          });
+
+          const addQty = Math.max(0, Math.min(remaining, parseInt(desiredToAdd || "0", 10)));
+
+          if (addQty > 0) {
+            window.addPromoBundlesToCart(addQty);
+          }
+
+          // garante que o botão some quando não tiver mais combos disponíveis
+          window.refreshComboButtonUI();
+        };
+
 
         // ===============================
         // QR MODAL (MESA)
@@ -1402,22 +1473,23 @@
             // =========================================================
             if (window.isPromoActiveNow() && window.promoConfig?.multiMode === "manual") {
               const burgerQty = window.countBurgersInCart();
-              if (burgerQty > 0) {
-                const existingPromoQty = window.countPromoBundlesInCart();
+              const existingPromoQty = window.countPromoBundlesInCart();
+              
+              // 2) Ajustar o fluxo do checkout (pra não dar duplicação)
+              const remaining = Math.max(0, burgerQty - existingPromoQty);
+              
+              if (remaining > 0) {
                 const price = Number(window.promoConfig?.price ?? window.promoConfig?.bundleCartItem?.preco ?? 10);
                 const promoName = (window.promoConfig?.promoName || "").trim() || "Promo Combo DEL8";
 
-                // modal retorna quantos combos o cliente quer (0..burgerQty)
-                const desired = await window.openPromoModal({
+                const desiredToAdd = await window.openPromoModal({
                   burgerQty,
                   existingPromoQty,
                   price,
                   promoName
                 });
 
-                // regra: não duplicar além do desejado
-                const desiredClamped = Math.max(0, Math.min(burgerQty, parseInt(desired || "0", 10)));
-                const addQty = Math.max(0, desiredClamped - existingPromoQty);
+                const addQty = Math.max(0, Math.min(remaining, parseInt(desiredToAdd || "0", 10)));
 
                 if (addQty > 0) {
                   window.addPromoBundlesToCart(addQty);
@@ -1458,9 +1530,11 @@
             // Garantir IDs únicos p/ rastreamento no Backoffice
             const safeDeviceId = (window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : 'dev-' + Date.now());
             
+            const mesa = window.getMesa(); // Lemos a mesa na hora do checkout pra garantir
+            
             const order = { 
                 id: orderId,
-                mesa: window.mesaAtual || null, // <- Adiciona a Mesa ao Pedido 
+                mesa: mesa || null,
                 date: new Date().toLocaleDateString('pt-BR'), 
                 time: new Date().toLocaleTimeString('pt-BR'), 
                 timestamp: Date.now(), 
@@ -1489,8 +1563,8 @@
             let msg = 
                 `🍔 *NOVO PEDIDO - DEL8* (#${orderId})\n\n`;
 
-            if (window.mesaAtual) {
-                msg += `🪑 *MESA:* ${window.mesaAtual}\n`; // <- Exibe a Mesa no WhatsApp
+            if (mesa) {
+                msg += `🪑 *MESA:* ${mesa}\n`; 
             }
 
             msg += `👤 *Cliente:* ${name}\n` +
@@ -1821,25 +1895,9 @@
         window.toggleSelection = function(){const btn=document.getElementById('btn-delete-selected'); if(!btn)return; const c=document.querySelectorAll('.order-checkbox:checked').length; btn.classList.toggle('hidden', c===0); if(c>0){const counter=document.getElementById('delete-count'); if(counter)counter.innerText=c;}}
         window.clearAllHistoryManual = function() { if(confirm("Deseja mesmo limpar todo o histórico atual?")) { window.internalClearOrders(); } }
 
-        window.analyzeCart = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-analyze-cart'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await window.callGemini("Analise", `Garçom sarcástico DEL 8. Pedido: ${window.cart.map(i=>i.nome).join(', ')}. Comente curto.`); document.getElementById('cart-ai-text').innerText=r; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
-        window.generateDietExcuse = async function(){if(window.cart.length===0)return; const b=document.getElementById('btn-diet-excuse'); const h=b.innerHTML; b.innerHTML='...'; b.disabled=true; const r=await window.callGemini("Desculpa", `Advogado engraçado. Cliente comeu: ${window.cart.map(i=>i.nome).join(', ')}. Desculpa p/ nutricionista. Curta.`); document.getElementById('cart-ai-text').innerText=`🤥 "${r}"`; document.getElementById('cart-ai-response').classList.remove('hidden'); b.innerHTML=h; b.disabled=false;}
         window.generateSlogan = async function(){const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await window.callGemini("Slogan", "Slogan curto/moderno/neon DEL 8."); alert(`📢 "${r.replace(/["']/g,"")}"`); b.innerText=h; b.disabled=false;}
         window.generateAIDescription = async function(){const n=document.getElementById('edit-name').value; if(!n)return alert('Nome?'); const b=event.target; const h=b.innerText; b.innerText='...'; b.disabled=true; const r=await window.callGemini("Descrição", `Mkt DEL 8. Descrição curta para: ${n}`); document.getElementById('edit-desc').value=r.replace(/["']/g,""); b.innerText=h; b.disabled=false;}
-        window.askChefAI = async function() {
-            const userInput = document.getElementById('ai-chef-input').value.trim();
-            if (!userInput) return;
-            const btn = document.getElementById('btn-ask-chef');
-            const resultDiv = document.getElementById('ai-chef-result');
-            btn.disabled = true; btn.innerHTML = '<svg class="icon animate-spin" viewBox="0 0 24 24"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"></path></svg> Pensando...';
-            const menuContext = JSON.stringify(window.menuData); 
-            const systemPrompt = `Você é a "Chef IA" da hamburgueria "DEL 8". O menu: ${menuContext}. Sugira 1-2 itens com base em: "${userInput}". Curto e divertido.`;
-            const response = await window.callGemini(userInput, systemPrompt);
-            resultDiv.innerHTML = marked.parse(response); resultDiv.classList.remove('hidden');
-            btn.disabled = false; btn.innerHTML = '<span>PEDIR OUTRA SUGESTÃO</span>';
-        }
-        window.openAiChefModal = function(){ document.getElementById('modal-ai-chef').classList.remove('hidden'); document.getElementById('ai-chef-result').classList.add('hidden'); document.getElementById('ai-chef-input').value=''; }
-        window.closeAiChefModal = function(){ document.getElementById('modal-ai-chef').classList.add('hidden'); }
-        window.closeCartAi = function() { document.getElementById('cart-ai-response').classList.add('hidden'); }
+        
         window.callGemini = async function(p, s) { try { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:p}]}], systemInstruction:{parts:[{text:s}]}}) }); const d = await r.json(); return d.candidates?.[0]?.content?.parts?.[0]?.text || "Erro IA"; } catch(e) { return "IA offline"; } }
 
         window.openHistoryEditModal = function(date, dataObj) {
@@ -1914,7 +1972,7 @@
                     exportedAt: new Date().toISOString()
                 },
                 del8ServerUrl: localStorage.getItem("del8ServerUrl") || "",
-                del8WhatsappNumber: localStorage.getItem("del8WhatsappNumber") || "5585999999999",
+                del8WhatsappNumber: localStorage.getItem("del8WhatsappNumber") || "5585921978736",
                 del8MenuData: JSON.parse(localStorage.getItem("del8MenuData") || "null"),
                 del8LocalOrders: JSON.parse(localStorage.getItem("del8LocalOrders") || "[]"),
                 del8ArchivedOrders: JSON.parse(localStorage.getItem("del8ArchivedOrders") || "[]"),
@@ -1984,7 +2042,7 @@
 
                     // atualiza estado em memória (pra refletir na UI sem precisar “adivinhar”)
                     window.serverUrl = localStorage.getItem("del8ServerUrl") || "";
-                    window.whatsappNumber = localStorage.getItem("del8WhatsappNumber") || "5585999999999";
+                    window.whatsappNumber = localStorage.getItem("del8WhatsappNumber") || "5585921978736";
                     window.menuData = JSON.parse(localStorage.getItem("del8MenuData")) || window.menuData;
                     window.localOrders = JSON.parse(localStorage.getItem("del8LocalOrders")) || [];
                     window.archivedOrders = JSON.parse(localStorage.getItem("del8ArchivedOrders")) || [];
